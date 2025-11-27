@@ -8,8 +8,8 @@
 namespace paramonov_l_min_matrix_cols_elm {
 
 class ParamonovLMinMatrixColsElmPerfTest : public ppc::util::BaseRunPerfTests<InType, OutType> {
-  std::vector<int> correct_test_output_data_;
-  InType input_data_;
+  std::vector<int> correct_test_output_data_{};
+  InType input_data_{};
 
   void SetUp() override {
     Generate(10000, 10000, 123);
@@ -57,7 +57,8 @@ TEST_P(ParamonovLMinMatrixColsElmPerfTest, RunPerfModes) {
 }
 
 const auto kAllPerfTasks =
-    ppc::util::MakeAllPerfTasks<InType, ParamonovLMinMatrixColsElmMPI, ParamonovLMinMatrixColsElmSEQ>(PPC_SETTINGS_paramonov_l_min_matrix_cols_elm);
+    ppc::util::MakeAllPerfTasks<InType, ParamonovLMinMatrixColsElmMPI, ParamonovLMinMatrixColsElmSEQ>(
+        PPC_SETTINGS_paramonov_l_min_matrix_cols_elm);
 
 const auto kGtestValues = ppc::util::TupleToGTestValues(kAllPerfTasks);
 

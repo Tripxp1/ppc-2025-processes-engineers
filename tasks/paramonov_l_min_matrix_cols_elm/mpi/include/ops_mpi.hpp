@@ -3,7 +3,7 @@
 #include "paramonov_l_min_matrix_cols_elm/common/include/common.hpp"
 #include "task/include/task.hpp"
 
-namespace paramonov_l_min_matrix_cols_elm{
+namespace paramonov_l_min_matrix_cols_elm {
 
 class ParamonovLMinMatrixColsElmMPI : public BaseTask {
  public:

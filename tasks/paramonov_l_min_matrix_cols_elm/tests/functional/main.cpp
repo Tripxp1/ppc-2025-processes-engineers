@@ -53,8 +53,8 @@ class ParamonovLMinMatrixColsElmTests : public ppc::util::BaseRunFuncTests<InTyp
   }
 
  private:
-  InType input_data_;
-  std::vector<int> correct_test_output_data_;
+  InType input_data_{};
+  std::vector<int> correct_test_output_data_{};
 
   void Generate(const TestType &params) {
     std::size_t m = std::get<2>(params)[0];

@@ -1,6 +1,5 @@
 #include "paramonov_l_min_matrix_cols_elm/seq/include/ops_seq.hpp"
 
-
 #include <numeric>
 #include <vector>
 
@@ -23,13 +22,13 @@ bool ParamonovLMinMatrixColsElmSEQ::ValidationImpl() {
 }
 
 bool ParamonovLMinMatrixColsElmSEQ::PreProcessingImpl() {
-  if(valid_) {
+  if (valid_) {
     std::size_t m = std::get<0>(GetInput());
     std::size_t n = std::get<1>(GetInput());
     std::vector<int> &val = std::get<2>(GetInput());
     t_matrix_ = std::vector<int>(n * m);
-    for(std::size_t i = 0; i < m; i++) {
-      for(std::size_t j = 0; j < n; j++) {
+    for (std::size_t i = 0; i < m; i++) {
+      for (std::size_t j = 0; j < n; j++) {
         t_matrix_[(j * m) + i] = val[(i * n) + j];
       }
     }
@@ -39,17 +38,17 @@ bool ParamonovLMinMatrixColsElmSEQ::PreProcessingImpl() {
 }
 
 bool ParamonovLMinMatrixColsElmSEQ::RunImpl() {
-  if(!valid_) {
+  if (!valid_) {
     return false;
   }
   std::size_t m = std::get<0>(GetInput());
   std::size_t n = std::get<1>(GetInput());
 
   std::vector<int> min_cols_elm(n);
-  for(std::size_t i = 0; i < n; i++) {
+  for (std::size_t i = 0; i < n; i++) {
     min_cols_elm[i] = t_matrix_[i * m];
-    for(std::size_t j = 1; j < m; j++) {
-      if(min_cols_elm[i] > t_matrix_[i * m + j]){
+    for (std::size_t j = 1; j < m; j++) {
+      if (min_cols_elm[i] > t_matrix_[i * m + j]) {
         min_cols_elm[i] = t_matrix_[i * m + j];
       }
     }
