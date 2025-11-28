@@ -2,8 +2,11 @@
 
 #include <mpi.h>
 
+#include <algorithm>
+#include <cstddef>
+#include <iostream>
 #include <limits>
-#include <numeric>
+#include <string>
 #include <vector>
 
 #include "paramonov_l_min_matrix_cols_elm/common/include/common.hpp"
@@ -27,84 +30,96 @@ bool ParamonovLMinMatrixColsElmMPI::ValidationImpl() {
 
 bool ParamonovLMinMatrixColsElmMPI::PreProcessingImpl() {
   if (valid_) {
-    std::size_t m = std::get<0>(GetInput());
-    std::size_t n = std::get<1>(GetInput());
-    std::vector<int> &val = std::get<2>(GetInput());
-    t_matrix_ = std::vector<int>(n * m);
-    for (std::size_t i = 0; i < m; i++) {
-      for (std::size_t j = 0; j < n; j++) {
-        t_matrix_[(j * m) + i] = val[(i * n) + j];
-      }
-    }
+    t_matrix_ = std::get<2>(GetInput());
     return true;
   }
   return false;
 }
 
 bool ParamonovLMinMatrixColsElmMPI::RunImpl() {
-  // проверка корректности данных
   if (!valid_) {
     return false;
   }
-  // получение размера матрицы
+
   std::size_t m = std::get<0>(GetInput());
   std::size_t n = std::get<1>(GetInput());
 
-  // debug
-  std::string deb = "\n\n-----------\n";
+  std::string debug = "\n\n-----------\n";
   for (std::size_t i = 0; i < n; i++) {
     for (std::size_t j = 0; j < m; j++) {
-      deb += std::to_string(t_matrix_[i * m + j]) + " ";
+      debug += std::to_string(t_matrix_[(i * m) + j]) + " ";
     }
-    deb += "\n";
+    debug += "\n";
   }
-  std::cout << deb;
+  std::cout << debug;
 
-  int rank = 0;
-  int mpi_size = 0;
+  int rank, mpi_size;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &mpi_size);
 
-  std::size_t procesess_step = t_matrix_.size() / mpi_size;
-  std::size_t start = procesess_step * rank;
-  std::size_t end = procesess_step * (rank + 1);
+  int cols_per_process = static_cast<int>(m) / mpi_size;
+  int start_col = rank * cols_per_process;
+  int end_col = (rank == mpi_size - 1) ? static_cast<int>(m) : start_col + cols_per_process;
 
-  if (rank == mpi_size - 1) {
-    end = t_matrix_.size();
-  }
+  std::vector<int> local_mins((end_col - start_col) * n);
 
-  std::vector<int> min_cols_elm;
-  int imax = std::numeric_limits<int>::max();
-  if (rank == 0) {
-    min_cols_elm.resize(n * mpi_size, imax);
-  } else {
-    min_cols_elm.resize(n, imax);
-  }
-  std::size_t row = start / m;
-  min_cols_elm[row] = t_matrix_[start];
-
-  for (std::size_t i = start; i < end; i++) {
-    if (i == (row + 1) * m) {
-      row++;
-      min_cols_elm[row] = t_matrix_[i];
-    }
-    if (min_cols_elm[row] > t_matrix_[i]) {
-      min_cols_elm[row] = t_matrix_[i];
-    }
-  }
-
-  MPI_Gather(min_cols_elm.data(), n, MPI_INT, min_cols_elm.data(), n, MPI_INT, 0, MPI_COMM_WORLD);
-  if (rank == 0) {
-    for (std::size_t i = 0; i < n; i++) {
-      for (int j = 0; j < mpi_size; j++) {
-        if (min_cols_elm[i] > min_cols_elm[j * n + i]) {
-          min_cols_elm[i] = min_cols_elm[j * n + i];
-        }
+  for (int col = start_col; col < end_col; col++) {
+    for (std::size_t row = 0; row < n; row++) {
+      int local_idx = (col - start_col) * static_cast<int>(n) + static_cast<int>(row);
+      if (row == 0) {
+        local_mins[local_idx] = t_matrix_[row * m + col];
+      } else {
+        local_mins[local_idx] = std::min(local_mins[local_idx], t_matrix_[row * m + col]);
       }
     }
   }
-  MPI_Bcast(min_cols_elm.data(), n, MPI_INT, 0, MPI_COMM_WORLD);
-  GetOutput() = min_cols_elm;
+
+  std::vector<int> all_mins;
+  if (rank == 0) {
+    all_mins.resize(m * n);
+  }
+
+  std::vector<int> recv_counts(mpi_size);
+  std::vector<int> displs(mpi_size);
+  int local_size = static_cast<int>(local_mins.size());
+  
+  MPI_Gather(&local_size, 1, MPI_INT, recv_counts.data(), 1, MPI_INT, 0, MPI_COMM_WORLD);
+  
+  if (rank == 0) {
+    displs[0] = 0;
+    for (int i = 1; i < mpi_size; i++) {
+      displs[i] = displs[i-1] + recv_counts[i-1];
+    }
+  }
+
+  MPI_Gatherv(local_mins.data(), local_size, MPI_INT,
+              all_mins.data(), recv_counts.data(), displs.data(), MPI_INT,
+              0, MPI_COMM_WORLD);
+
+  std::vector<int> result;
+  if (rank == 0) {
+    result.resize(m);
+    for (int col = 0; col < static_cast<int>(m); col++) {
+      int process_id = col / cols_per_process;
+      if (process_id >= mpi_size) process_id = mpi_size - 1;
+      
+      int local_col = col - (process_id * cols_per_process);
+      int start_idx = displs[process_id] + local_col * static_cast<int>(n);
+      
+      result[col] = all_mins[start_idx];
+      for (std::size_t row = 1; row < n; row++) {
+        result[col] = std::min(result[col], all_mins[start_idx + static_cast<int>(row)]);
+      }
+    }
+  }
+
+  if (rank == 0) {
+    GetOutput() = result;
+  } else {
+    GetOutput().resize(m);
+  }
+
+  MPI_Bcast(GetOutput().data(), static_cast<int>(m), MPI_INT, 0, MPI_COMM_WORLD);
 
   return true;
 }

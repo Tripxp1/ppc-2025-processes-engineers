@@ -1,5 +1,11 @@
 #include <gtest/gtest.h>
 
+#include <algorithm>
+#include <cstddef>
+#include <random>
+#include <tuple>
+#include <vector>
+
 #include "paramonov_l_min_matrix_cols_elm/common/include/common.hpp"
 #include "paramonov_l_min_matrix_cols_elm/mpi/include/ops_mpi.hpp"
 #include "paramonov_l_min_matrix_cols_elm/seq/include/ops_seq.hpp"
@@ -8,8 +14,8 @@
 namespace paramonov_l_min_matrix_cols_elm {
 
 class ParamonovLMinMatrixColsElmPerfTest : public ppc::util::BaseRunPerfTests<InType, OutType> {
-  std::vector<int> correct_test_output_data_{};
-  InType input_data_{};
+  std::vector<int> correct_test_output_data_;
+  InType input_data_;
 
   void SetUp() override {
     Generate(10000, 10000, 123);
@@ -33,20 +39,19 @@ class ParamonovLMinMatrixColsElmPerfTest : public ppc::util::BaseRunPerfTests<In
     std::uniform_int_distribution<> idis(-10, 20);
 
     std::vector<int> val(m * n);
-    std::vector<int> answer(n);
-    for (std::size_t i = 0; i < n; i++) {
-      val[i] = idis(gen);
-      answer[i] = val[i];
+    std::vector<int> answer(m);
+    
+    for (std::size_t j = 0; j < m; j++) {
+      answer[j] = std::numeric_limits<int>::max();
     }
-
-    for (std::size_t i = 1; i < m; i++) {
-      for (std::size_t j = 0; j < n; j++) {
-        val[i * n + j] = idis(gen);
-        if (answer[j] > val[i * n + j]) {
-          answer[j] = val[i * n + j];
-        }
+    
+    for (std::size_t i = 0; i < n; i++) {
+      for (std::size_t j = 0; j < m; j++) {
+        val[(i * m) + j] = idis(gen);
+        answer[j] = std::min(answer[j], val[(i * m) + j]);
       }
     }
+    
     input_data_ = std::make_tuple(m, n, val);
     correct_test_output_data_ = answer;
   }

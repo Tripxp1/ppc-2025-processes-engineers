@@ -1,12 +1,14 @@
 #include "paramonov_l_min_matrix_cols_elm/seq/include/ops_seq.hpp"
 
-#include <numeric>
+#include <algorithm>
+#include <cstddef>
 #include <vector>
 
 #include "paramonov_l_min_matrix_cols_elm/common/include/common.hpp"
 #include "util/include/util.hpp"
 
 namespace paramonov_l_min_matrix_cols_elm {
+
 ParamonovLMinMatrixColsElmSEQ::ParamonovLMinMatrixColsElmSEQ(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
   GetInput() = in;
@@ -23,15 +25,7 @@ bool ParamonovLMinMatrixColsElmSEQ::ValidationImpl() {
 
 bool ParamonovLMinMatrixColsElmSEQ::PreProcessingImpl() {
   if (valid_) {
-    std::size_t m = std::get<0>(GetInput());
-    std::size_t n = std::get<1>(GetInput());
-    std::vector<int> &val = std::get<2>(GetInput());
-    t_matrix_ = std::vector<int>(n * m);
-    for (std::size_t i = 0; i < m; i++) {
-      for (std::size_t j = 0; j < n; j++) {
-        t_matrix_[(j * m) + i] = val[(i * n) + j];
-      }
-    }
+    t_matrix_ = std::get<2>(GetInput()); 
     return true;
   }
   return false;
@@ -41,18 +35,19 @@ bool ParamonovLMinMatrixColsElmSEQ::RunImpl() {
   if (!valid_) {
     return false;
   }
+  
   std::size_t m = std::get<0>(GetInput());
   std::size_t n = std::get<1>(GetInput());
 
-  std::vector<int> min_cols_elm(n);
-  for (std::size_t i = 0; i < n; i++) {
-    min_cols_elm[i] = t_matrix_[i * m];
-    for (std::size_t j = 1; j < m; j++) {
-      if (min_cols_elm[i] > t_matrix_[i * m + j]) {
-        min_cols_elm[i] = t_matrix_[i * m + j];
-      }
+  std::vector<int> min_cols_elm(m); 
+  
+  for (std::size_t j = 0; j < m; j++) {      
+    min_cols_elm[j] = t_matrix_[j];          
+    for (std::size_t i = 1; i < n; i++) {    
+      min_cols_elm[j] = std::min(min_cols_elm[j], t_matrix_[(i * m) + j]);
     }
   }
+  
   GetOutput() = min_cols_elm;
   return true;
 }
