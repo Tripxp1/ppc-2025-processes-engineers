@@ -1,13 +1,11 @@
 #pragma once
 
-#include <vector>  
-
 #include "paramonov_l_min_matrix_cols_elm/common/include/common.hpp"
 #include "task/include/task.hpp"
 
 namespace paramonov_l_min_matrix_cols_elm {
 
-class ParamonovLMinMatrixColsElmMPI : public ParamonovLMinMatrixColsElm {
+class ParamonovLMinMatrixColsElmMPI : public BaseTask {
  public:
   static constexpr ppc::task::TypeOfTask GetStaticTypeOfTask() {
     return ppc::task::TypeOfTask::kMPI;
