@@ -3,11 +3,9 @@
 #include <mpi.h>
 
 #include <limits>
-#include <numeric>
 #include <vector>
 
 #include "paramonov_l_min_matrix_cols_elm/common/include/common.hpp"
-#include "util/include/util.hpp"
 
 namespace paramonov_l_min_matrix_cols_elm {
 
