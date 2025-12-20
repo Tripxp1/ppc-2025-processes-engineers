@@ -1,7 +1,5 @@
 #include "paramonov_from_one_to_all/seq/include/ops_seq.hpp"
 
-#include <vector>
-
 #include "paramonov_from_one_to_all/common/include/common.hpp"
 
 namespace paramonov_from_one_to_all {
@@ -9,16 +7,17 @@ namespace paramonov_from_one_to_all {
 ParamonovFromOneToAllSEQ::ParamonovFromOneToAllSEQ(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
   GetInput() = in;
-  GetOutput() = std::vector<int>();
+  GetOutput() = AnyBuffer();
 }
 
 bool ParamonovFromOneToAllSEQ::ValidationImpl() {
   const int root = std::get<0>(GetInput());
-  const std::vector<int> &buffer = std::get<1>(GetInput());
-  // Проверяем, что есть данные и корневой ранг задан неотрицательно.
-  const bool has_data = !buffer.empty();
+  const AnyBuffer &buffer = std::get<1>(GetInput());
+  // Проверяем, что буфер непустой, корневой ранг корректный и тип/данные согласованы.
+  const bool has_data = !buffer.Empty();
   const bool root_non_negative = root >= 0;
-  valid_ = has_data && root_non_negative;
+  const bool consistent = buffer.IsConsistent();
+  valid_ = has_data && root_non_negative && consistent;
   return valid_;
 }
 

@@ -1,6 +1,9 @@
 #include <gtest/gtest.h>
 
+#include <cstddef>
 #include <numeric>
+#include <tuple>
+#include <utility>
 #include <vector>
 
 #include "paramonov_from_one_to_all/common/include/common.hpp"
@@ -11,14 +14,15 @@
 namespace paramonov_from_one_to_all {
 
 class BroadcastPerfTests : public ppc::util::BaseRunPerfTests<InType, OutType> {
-  InType input_data_{};
-  OutType expected_{};
+  InType input_data_;
+  OutType expected_;
 
   void SetUp() override {
     const int root = 0;
     const int size = 50000;
-    expected_.resize(size);
-    std::iota(expected_.begin(), expected_.end(), -1000);
+    std::vector<int> payload(static_cast<std::size_t>(size));
+    std::ranges::iota(payload, -1000);
+    expected_ = MakeIntBuffer(std::move(payload));
     input_data_ = std::make_tuple(root, expected_);
   }
 
@@ -35,14 +39,15 @@ TEST_P(BroadcastPerfTests, RunPerfModes) {
   ExecuteTest(GetParam());
 }
 
-const auto kAllPerfTasks =
-    ppc::util::MakeAllPerfTasks<InType, ParamonovFromOneToAllMPI, ParamonovFromOneToAllSEQ>(
-        PPC_SETTINGS_paramonov_from_one_to_all);
+const auto kAllPerfTasks = ppc::util::MakeAllPerfTasks<InType, ParamonovFromOneToAllMPI, ParamonovFromOneToAllSEQ>(
+    PPC_SETTINGS_paramonov_from_one_to_all);
 
 const auto kGtestValues = ppc::util::TupleToGTestValues(kAllPerfTasks);
 
 const auto kPerfTestName = BroadcastPerfTests::CustomPerfTestName;
 
+// NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables, modernize-type-traits, misc-use-anonymous-namespace)
 INSTANTIATE_TEST_SUITE_P(RunModeTests, BroadcastPerfTests, kGtestValues, kPerfTestName);
+// NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables, modernize-type-traits, misc-use-anonymous-namespace)
 
 }  // namespace paramonov_from_one_to_all
