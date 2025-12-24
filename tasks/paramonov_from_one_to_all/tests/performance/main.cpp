@@ -21,7 +21,7 @@ class BroadcastPerfTests : public ppc::util::BaseRunPerfTests<InType, OutType> {
     const int root = 0;
     const int size = 50000;
     std::vector<int> payload(static_cast<std::size_t>(size));
-    std::ranges::iota(payload, -1000);
+    std::iota(payload.begin(), payload.end(), -1000);  // NOLINT(modernize-use-ranges)
     expected_ = MakeIntBuffer(std::move(payload));
     input_data_ = std::make_tuple(root, expected_);
   }
