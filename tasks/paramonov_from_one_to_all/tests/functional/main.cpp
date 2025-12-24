@@ -38,7 +38,7 @@ class BroadcastFuncTests : public ppc::util::BaseRunFuncTests<InType, OutType, T
     if (is_mpi_launch) {
       int world_size = 0;
       MPI_Comm_size(MPI_COMM_WORLD, &world_size);
-      if (root >= world_size) {
+      if (root < 0 || root >= world_size) {
         GTEST_SKIP();
       }
     }
@@ -99,17 +99,23 @@ std::vector<ParamType> MakeTestParams() {
   std::vector<ParamType> params;
 
   auto filtered = kTestParamVec;
+  
   if (ppc::util::IsUnderMpirun()) {
-    const int world_size = ppc::util::GetNumProc();
-    std::erase_if(filtered, [&](const TestType &t) {
-      const int root = std::get<1>(t);
-      return root >= world_size;
-    });
-  }
-
-  AppendTasksFor<ParamonovFromOneToAllMPI>(filtered, params);
-
-  if (!ppc::util::IsUnderMpirun()) {
+    int world_size = 0;
+    MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+    
+    std::vector<TestType> valid_tests;
+    for (const auto &test : filtered) {
+      const int root = std::get<1>(test);
+      if (root >= 0 && root < world_size) {
+        valid_tests.push_back(test);
+      }
+    }
+    
+    if (!valid_tests.empty()) {
+      AppendTasksFor<ParamonovFromOneToAllMPI>(valid_tests, params);
+    }
+  } else {
     AppendTasksFor<ParamonovFromOneToAllSEQ>(kTestParamVec, params);
   }
 
@@ -121,10 +127,8 @@ const auto kGtestValues = ::testing::ValuesIn(kTestParamsVec);
 
 const auto kPerfTestName = BroadcastFuncTests::PrintFuncTestName<BroadcastFuncTests>;
 
-// NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables, modernize-type-traits, misc-use-anonymous-namespace)
 INSTANTIATE_TEST_SUITE_P(BroadcastTests, BroadcastFuncTests, kGtestValues, kPerfTestName);
-// NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables, modernize-type-traits, misc-use-anonymous-namespace)
 
-}  // namespace
+} 
 
 }  // namespace paramonov_from_one_to_all
