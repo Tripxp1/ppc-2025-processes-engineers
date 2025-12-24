@@ -30,6 +30,11 @@ class BroadcastFuncTests : public ppc::util::BaseRunFuncTests<InType, OutType, T
         std::get<static_cast<std::size_t>(ppc::util::GTestParamIndex::kNameTest)>(GetParam());
 
     const bool is_mpi_launch = ppc::util::IsUnderMpirun();
+#ifdef _WIN32
+    if (is_mpi_launch) {
+      GTEST_SKIP() << "MPI-run is not supported on Windows CI";
+    }
+#endif
     if (is_mpi_launch && task_name.find("_seq_") != std::string::npos) {
       GTEST_SKIP();
     }
@@ -99,6 +104,12 @@ std::vector<ParamType> MakeTestParams() {
   std::vector<ParamType> params;
 
   auto filtered = kTestParamVec;
+#ifdef _WIN32
+  const bool skip_mpi = ppc::util::IsUnderMpirun();
+#else
+  const bool skip_mpi = false;
+#endif
+
   if (ppc::util::IsUnderMpirun()) {
     const int world_size = ppc::util::GetNumProc();
     std::erase_if(filtered, [&](const TestType &t) {
@@ -107,7 +118,9 @@ std::vector<ParamType> MakeTestParams() {
     });
   }
 
-  AppendTasksFor<ParamonovFromOneToAllMPI>(filtered, params);
+  if (!skip_mpi) {
+    AppendTasksFor<ParamonovFromOneToAllMPI>(filtered, params);
+  }
 
   if (!ppc::util::IsUnderMpirun()) {
     AppendTasksFor<ParamonovFromOneToAllSEQ>(kTestParamVec, params);

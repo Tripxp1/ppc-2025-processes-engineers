@@ -13,6 +13,7 @@
 
 namespace paramonov_from_one_to_all {
 
+#ifndef _WIN32
 class BroadcastPerfTests : public ppc::util::BaseRunPerfTests<InType, OutType> {
   InType input_data_;
   OutType expected_;
@@ -21,7 +22,7 @@ class BroadcastPerfTests : public ppc::util::BaseRunPerfTests<InType, OutType> {
     const int root = 0;
     const int size = 50000;
     std::vector<int> payload(static_cast<std::size_t>(size));
-    std::ranges::iota(payload, -1000);
+    std::iota(payload.begin(), payload.end(), -1000);  // NOLINT(modernize-use-ranges)
     expected_ = MakeIntBuffer(std::move(payload));
     input_data_ = std::make_tuple(root, expected_);
   }
@@ -49,5 +50,11 @@ const auto kPerfTestName = BroadcastPerfTests::CustomPerfTestName;
 // NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables, modernize-type-traits, misc-use-anonymous-namespace)
 INSTANTIATE_TEST_SUITE_P(RunModeTests, BroadcastPerfTests, kGtestValues, kPerfTestName);
 // NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables, modernize-type-traits, misc-use-anonymous-namespace)
+
+#else
+TEST(BroadcastPerfTests, DisabledOnWindows) {
+  GTEST_SKIP() << "MPI performance tests are not supported on Windows CI.";
+}
+#endif
 
 }  // namespace paramonov_from_one_to_all
