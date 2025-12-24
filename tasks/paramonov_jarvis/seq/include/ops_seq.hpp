@@ -1,24 +1,26 @@
 #pragma once
 
-#include "paramonov_jarvis/common/include/common.hpp"
+#include <vector>
+
+#include "paramonov_from_one_to_all/common/include/common.hpp"
 #include "task/include/task.hpp"
 
-namespace paramonov_jarvis {
+namespace paramonov_from_one_to_all {
 
-class ParamonovJarvisSEQ : public BaseTask {
- public:
+class ParamonovFromOneToAllProhodSEQ : public BaseTask {
+public:
   static constexpr ppc::task::TypeOfTask GetStaticTypeOfTask() {
     return ppc::task::TypeOfTask::kSEQ;
   }
-  explicit ParamonovJarvisSEQ(const InType &in);
+  explicit ParamonovFromOneToAllProhodSEQ(const InType &in);
 
- private:
+private:
   bool ValidationImpl() override;
   bool PreProcessingImpl() override;
   bool RunImpl() override;
   bool PostProcessingImpl() override;
 
-  bool valid_ = false;
+  static std::vector<Point> JarvisMarch(std::vector<Point> points);
 };
 
-}  // namespace paramonov_jarvis
+} // namespace paramonov_from_one_to_all

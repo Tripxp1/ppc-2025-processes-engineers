@@ -1,103 +1,54 @@
 #pragma once
 
 #include <algorithm>
-#include <cstddef>
-#include <ranges>
-#include <string>
+#include <cstdint>
 #include <tuple>
 #include <vector>
 
 #include "task/include/task.hpp"
 
-namespace paramonov_jarvis {
+namespace paramonov_from_one_to_all {
 
 struct Point {
-  double x{};
-  double y{};
+  int x{};
+  int y{};
 
-  bool operator==(const Point &other) const {
+  constexpr bool operator==(const Point &other) const noexcept {
     return x == other.x && y == other.y;
+  }
+
+  constexpr bool operator!=(const Point &other) const noexcept {
+    return !(*this == other);
   }
 };
 
-using InType = std::vector<Point>;
-using OutType = std::vector<Point>;
-using TestType = std::tuple<std::string, std::vector<Point>, OutType>;
-using BaseTask = ppc::task::Task<InType, OutType>;
-
-namespace detail {
-
-inline double Cross(const Point &a, const Point &b, const Point &c) {
-  return ((b.x - a.x) * (c.y - a.y)) - ((b.y - a.y) * (c.x - a.x));
+constexpr bool IsEqual(const Point &p1, const Point &p2) noexcept {
+  return p1.x == p2.x && p1.y == p2.y;
 }
 
-inline double Dist2(const Point &a, const Point &b) {
-  const double dx = a.x - b.x;
-  const double dy = a.y - b.y;
+constexpr int64_t CrossCalculate(const Point &p1, const Point &p2,
+                                 const Point &p3) noexcept {
+  return (static_cast<int64_t>(p2.x - p1.x) *
+          static_cast<int64_t>(p3.y - p1.y)) -
+         (static_cast<int64_t>(p2.y - p1.y) *
+          static_cast<int64_t>(p3.x - p1.x));
+}
+
+constexpr int SqDistance(const Point &p1, const Point &p2) noexcept {
+  const int dx = p2.x - p1.x;
+  const int dy = p2.y - p1.y;
   return (dx * dx) + (dy * dy);
 }
 
-inline std::size_t FindLeftmost(const InType &points) {
-  std::size_t leftmost = 0;
-  for (std::size_t i = 1; i < points.size(); i++) {
-    if (points[i].x < points[leftmost].x || (points[i].x == points[leftmost].x && points[i].y < points[leftmost].y)) {
-      leftmost = i;
-    }
-  }
-  return leftmost;
+inline Point FindStartPoint(const std::vector<Point> &points) {
+  return *std::ranges::min_element(points, [](const Point &a, const Point &b) {
+    return a.x < b.x || (a.x == b.x && a.y < b.y);
+  });
 }
 
-inline std::size_t SelectNextPoint(const InType &points, std::size_t current, std::size_t candidate) {
-  for (std::size_t i = 0; i < points.size(); i++) {
-    if (i == current) {
-      continue;
-    }
-    const double cross = Cross(points[current], points[candidate], points[i]);
-    const bool better_turn = cross > 0;
-    const bool farther_on_line =
-        (cross == 0) && (Dist2(points[current], points[i]) > Dist2(points[current], points[candidate]));
-    if (better_turn || farther_on_line) {
-      candidate = i;
-    }
-  }
-  return candidate;
-}
+using InType = std::vector<Point>;
+using OutType = std::vector<Point>;
+using TestType = std::tuple<int, std::vector<Point>, std::vector<Point>>;
+using BaseTask = ppc::task::Task<InType, OutType>;
 
-inline void NormalizeHull(OutType &hull) {
-  if (hull.size() < 2) {
-    return;
-  }
-  const auto it = std::ranges::min_element(
-      hull, [](const Point &a, const Point &b) { return (a.x < b.x) || (a.x == b.x && a.y < b.y); });
-  std::ranges::rotate(hull, it);
-}
-
-inline OutType BuildHull(const InType &points) {
-  if (points.size() < 3) {
-    return {};
-  }
-
-  OutType hull;
-  const std::size_t n = points.size();
-  const std::size_t start = FindLeftmost(points);
-  std::size_t p = start;
-  while (true) {
-    hull.push_back(points[p]);
-    const std::size_t initial_candidate = (p + 1) % n;
-    const std::size_t next = SelectNextPoint(points, p, initial_candidate);
-    if (next == start) {
-      break;
-    }
-    if (next == p) {
-      break;
-    }
-    p = next;
-  }
-
-  NormalizeHull(hull);
-  return hull;
-}
-
-}  // namespace detail
-
-}  // namespace paramonov_jarvis
+} // namespace paramonov_from_one_to_all

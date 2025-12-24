@@ -1,58 +1,86 @@
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <cstddef>
-#include <cstdint>
+#include <random>
+#include <vector>
 
-#include "paramonov_jarvis/common/include/common.hpp"
-#include "paramonov_jarvis/mpi/include/ops_mpi.hpp"
-#include "paramonov_jarvis/seq/include/ops_seq.hpp"
+#include "paramonov_from_one_to_all/common/include/common.hpp"
+#include "paramonov_from_one_to_all/mpi/include/ops_mpi.hpp"
+#include "paramonov_from_one_to_all/seq/include/ops_seq.hpp"
 #include "util/include/perf_test_util.hpp"
 
-namespace paramonov_jarvis {
+namespace paramonov_from_one_to_all {
 
-class JarvisPerfTests : public ppc::util::BaseRunPerfTests<InType, OutType> {
-  InType input_data_;
-  OutType expected_;
+static bool CheckValidHull(const std::vector<Point> &points,
+                           const std::vector<Point> &hull) {
+  if (hull.empty()) {
+    return points.empty();
+  }
 
-  void SetUp() override {
-    const std::size_t count = 20000;
-    std::uint32_t state = 0x12345678U;
-    auto next_val = [&]() {
-      state = (state * 1664525U) + 1013904223U;  // простой LCG
-      return state;
-    };
-    input_data_.resize(count);
-    for (auto &pt : input_data_) {
-      const auto vx = next_val();
-      const auto vy = next_val();
-      pt.x = static_cast<double>(static_cast<int32_t>(vx % 20001U) - 10000);
-      pt.y = static_cast<double>(static_cast<int32_t>(vy % 20001U) - 10000);
+  for (const auto &h : hull) {
+    if (std::ranges::find(points, h) == points.end()) {
+      return false;
     }
-    expected_ = detail::BuildHull(input_data_);
+  }
+
+  for (std::size_t i = 0; i < hull.size(); ++i) {
+    const Point &p1 = hull[i];
+    const Point &p2 = hull[(i + 1) % hull.size()];
+    const Point &p3 = hull[(i + 2) % hull.size()];
+    if (CrossCalculate(p1, p2, p3) < 0) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+class ParamonovFromOneToAllProhodRunPerfTests
+    : public ppc::util::BaseRunPerfTests<InType, OutType> {
+public:
+  static constexpr std::size_t kSize = 1000000;
+
+protected:
+  void SetUp() override {
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<int> dist(-1000, 1000);
+
+    i_points_.resize(kSize);
+    for (std::size_t i = 0; i < kSize; ++i) {
+      i_points_[i] = Point{.x = dist(gen), .y = dist(gen)};
+    }
+
+    i_points_[0] = Point{.x = -30000, .y = 0};
+    i_points_[1] = Point{.x = 30000, .y = 0};
+    i_points_[2] = Point{.x = 0, .y = -30000};
+    i_points_[3] = Point{.x = 0, .y = 30000};
   }
 
   bool CheckTestOutputData(OutType &output_data) final {
-    return output_data == expected_;
+    return CheckValidHull(i_points_, output_data);
   }
 
-  InType GetTestInputData() final {
-    return input_data_;
-  }
+  InType GetTestInputData() final { return i_points_; }
+
+private:
+  InType i_points_;
 };
 
-TEST_P(JarvisPerfTests, RunPerfModes) {
+TEST_P(ParamonovFromOneToAllProhodRunPerfTests, RunPerfModes) {
   ExecuteTest(GetParam());
 }
 
 const auto kAllPerfTasks =
-    ppc::util::MakeAllPerfTasks<InType, ParamonovJarvisMPI, ParamonovJarvisSEQ>(PPC_SETTINGS_paramonov_jarvis);
+    ppc::util::MakeAllPerfTasks<InType, ParamonovFromOneToAllProhodMPI,
+                                ParamonovFromOneToAllProhodSEQ>(
+        PPC_SETTINGS_paramonov_from_one_to_all);
 
 const auto kGtestValues = ppc::util::TupleToGTestValues(kAllPerfTasks);
 
-const auto kPerfTestName = JarvisPerfTests::CustomPerfTestName;
+INSTANTIATE_TEST_SUITE_P(
+    RunModeTests, ParamonovFromOneToAllProhodRunPerfTests, kGtestValues,
+    ParamonovFromOneToAllProhodRunPerfTests::CustomPerfTestName);
 
-// NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables, modernize-type-traits, misc-use-anonymous-namespace)
-INSTANTIATE_TEST_SUITE_P(RunModeTests, JarvisPerfTests, kGtestValues, kPerfTestName);
-// NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables, modernize-type-traits, misc-use-anonymous-namespace)
-
-}  // namespace paramonov_jarvis
+} // namespace paramonov_from_one_to_all
