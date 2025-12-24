@@ -5,20 +5,18 @@
 
 namespace paramonov_from_one_to_all {
 
-class ParamonovFromOneToAllSEQ : public BaseTask {
+class ParamonovBcastSEQ : public BaseTask {
  public:
   static constexpr ppc::task::TypeOfTask GetStaticTypeOfTask() {
     return ppc::task::TypeOfTask::kSEQ;
   }
-  explicit ParamonovFromOneToAllSEQ(const InType &in);
+  explicit ParamonovBcastSEQ(const InType &in);
 
  private:
   bool ValidationImpl() override;
   bool PreProcessingImpl() override;
   bool RunImpl() override;
   bool PostProcessingImpl() override;
-
-  bool valid_ = false;
 };
 
 }  // namespace paramonov_from_one_to_all

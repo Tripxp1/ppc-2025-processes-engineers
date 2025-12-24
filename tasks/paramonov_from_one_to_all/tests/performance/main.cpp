@@ -1,9 +1,6 @@
 #include <gtest/gtest.h>
 
-#include <cstddef>
-#include <numeric>
 #include <tuple>
-#include <utility>
 #include <vector>
 
 #include "paramonov_from_one_to_all/common/include/common.hpp"
@@ -13,21 +10,28 @@
 
 namespace paramonov_from_one_to_all {
 
-class BroadcastPerfTests : public ppc::util::BaseRunPerfTests<InType, OutType> {
+class ParamonovBcastPerfTest : public ppc::util::BaseRunPerfTests<InType, OutType> {
+ private:
   InType input_data_;
-  OutType expected_;
+  double count_ = 1000000;
 
+ public:
   void SetUp() override {
-    const int root = 0;
-    const int size = 50000;
-    std::vector<int> payload(static_cast<std::size_t>(size));
-    std::iota(payload.begin(), payload.end(), -1000);  // NOLINT(modernize-use-ranges)
-    expected_ = MakeIntBuffer(std::move(payload));
-    input_data_ = std::make_tuple(root, expected_);
+    std::vector<int> v_int(0);
+    std::vector<float> v_float(0);
+    std::vector<double> v_double(0);
+    for (int i = 0; i < count_; i++) {
+      v_int.push_back(i);
+      v_float.push_back(static_cast<float>(i));
+      v_double.push_back(static_cast<double>(i));
+    }
+    int main_proc = 1;
+    input_data_ = std::tuple<int, int, std::vector<int>, std::vector<float>, std::vector<double>>(
+        main_proc, count_, v_int, v_float, v_double);
   }
 
   bool CheckTestOutputData(OutType &output_data) final {
-    return output_data == expected_;
+    return output_data;
   }
 
   InType GetTestInputData() final {
@@ -35,19 +39,17 @@ class BroadcastPerfTests : public ppc::util::BaseRunPerfTests<InType, OutType> {
   }
 };
 
-TEST_P(BroadcastPerfTests, RunPerfModes) {
+TEST_P(ParamonovBcastPerfTest, RunPerfModes) {
   ExecuteTest(GetParam());
 }
 
-const auto kAllPerfTasks = ppc::util::MakeAllPerfTasks<InType, ParamonovFromOneToAllMPI, ParamonovFromOneToAllSEQ>(
-    PPC_SETTINGS_paramonov_from_one_to_all);
+const auto kAllPerfTasks =
+    ppc::util::MakeAllPerfTasks<InType, ParamonovBcastMPI, ParamonovBcastSEQ>(PPC_SETTINGS_paramonov_from_one_to_all);
 
 const auto kGtestValues = ppc::util::TupleToGTestValues(kAllPerfTasks);
 
-const auto kPerfTestName = BroadcastPerfTests::CustomPerfTestName;
+const auto kPerfTestName = ParamonovBcastPerfTest::CustomPerfTestName;
 
-// NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables, modernize-type-traits, misc-use-anonymous-namespace)
-INSTANTIATE_TEST_SUITE_P(RunModeTests, BroadcastPerfTests, kGtestValues, kPerfTestName);
-// NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables, modernize-type-traits, misc-use-anonymous-namespace)
+INSTANTIATE_TEST_SUITE_P(BcastPerfTests, ParamonovBcastPerfTest, kGtestValues, kPerfTestName);
 
 }  // namespace paramonov_from_one_to_all
