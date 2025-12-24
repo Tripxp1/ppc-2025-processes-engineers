@@ -162,11 +162,11 @@ inline std::size_t AnyBuffer::Size() const {
 inline bool AnyBuffer::IsConsistent() const {
   switch (type) {
     case DataType::kInt:
-      return !ints.empty();
+      return !ints.empty() && floats.empty() && doubles.empty();
     case DataType::kFloat:
-      return !floats.empty();
+      return !floats.empty() && ints.empty() && doubles.empty();
     case DataType::kDouble:
-      return !doubles.empty();
+      return !doubles.empty() && ints.empty() && floats.empty();
   }
   return false;
 }

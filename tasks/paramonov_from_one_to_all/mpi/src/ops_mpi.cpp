@@ -96,8 +96,10 @@ bool BroadcastVectorTree(const std::vector<T> &input, std::vector<T> &output, in
   MPI_Datatype mpi_type = GetMpiType<T>();
   const int input_count = static_cast<int>(input.size());
 
+  // Переводим ранги в "логические", чтобы корень оказался нулём.
   const int logical_rank = (rank - root + world_size) % world_size;
 
+  // Шаг 1: разошлём размер.
   int count = input_count;
   BroadcastCount(world_size, logical_rank, root, count);
 
@@ -111,12 +113,13 @@ bool BroadcastVectorTree(const std::vector<T> &input, std::vector<T> &output, in
     std::copy(input.begin(), input.end(), output.begin());
   }
 
+  // Шаг 2: разошлём сами данные по тому же дереву.
   BroadcastPayload(world_size, logical_rank, root, output, count, mpi_type);
 
   return true;
 }
 
-}
+}  // namespace
 
 ParamonovFromOneToAllMPI::ParamonovFromOneToAllMPI(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
@@ -127,16 +130,13 @@ ParamonovFromOneToAllMPI::ParamonovFromOneToAllMPI(const InType &in) {
 bool ParamonovFromOneToAllMPI::ValidationImpl() {
   const int root = std::get<0>(GetInput());
   const AnyBuffer &buffer = std::get<1>(GetInput());
-  
-  int world_size = 0;
-  MPI_Comm_size(MPI_COMM_WORLD, &world_size);
-  
-  const bool root_valid = root >= 0 && root < world_size;
+  // Нужен непустой буфер, корректный корень, размер, помещающийся в MPI count, и согласованный тип.
+  const bool root_non_negative = root >= 0;
   const bool has_data = !buffer.Empty();
   const bool consistent = buffer.IsConsistent();
   const bool fits_mpi_count = buffer.Size() <= static_cast<std::size_t>(std::numeric_limits<int>::max());
 
-  valid_ = root_valid && has_data && consistent && fits_mpi_count;
+  valid_ = root_non_negative && has_data && consistent && fits_mpi_count;
   return valid_;
 }
 
