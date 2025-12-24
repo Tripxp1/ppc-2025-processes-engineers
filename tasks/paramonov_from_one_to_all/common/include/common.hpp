@@ -44,9 +44,8 @@ inline bool operator==(const AnyBuffer &lhs, const AnyBuffer &rhs) {
       return lhs.floats == rhs.floats;
     case DataType::kDouble:
       return lhs.doubles == rhs.doubles;
-    default:
-      return false;
   }
+  return false;
 }
 
 inline AnyBuffer MakeIntBuffer(std::vector<int> data) {
@@ -78,9 +77,8 @@ inline const char *ToString(DataType type) {
       return "float";
     case DataType::kDouble:
       return "double";
-    default:
-      return "unknown";
   }
+  return "unknown";
 }
 
 inline void PrintTo(const AnyBuffer &buf, std::ostream *os) {
@@ -105,8 +103,6 @@ inline void PrintTo(const AnyBuffer &buf, std::ostream *os) {
     case DataType::kDouble:
       print_vec(buf.doubles);
       break;
-    default:
-      *os << "unknown_type";
   }
   *os << "])";
 }
@@ -159,22 +155,20 @@ inline std::size_t AnyBuffer::Size() const {
       return floats.size();
     case DataType::kDouble:
       return doubles.size();
-    default:
-      return 0;
   }
+  return 0;
 }
 
 inline bool AnyBuffer::IsConsistent() const {
   switch (type) {
     case DataType::kInt:
-      return !ints.empty() && floats.empty() && doubles.empty();
+      return !ints.empty();
     case DataType::kFloat:
-      return !floats.empty() && ints.empty() && doubles.empty();
+      return !floats.empty();
     case DataType::kDouble:
-      return !doubles.empty() && ints.empty() && floats.empty();
-    default:
-      return false;
+      return !doubles.empty();
   }
+  return false;
 }
 
 }  // namespace paramonov_from_one_to_all
