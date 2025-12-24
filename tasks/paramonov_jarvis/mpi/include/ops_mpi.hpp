@@ -8,7 +8,7 @@
 namespace paramonov_from_one_to_all {
 
 class ParamonovFromOneToAllProhodMPI : public BaseTask {
-public:
+ public:
   static constexpr ppc::task::TypeOfTask GetStaticTypeOfTask() noexcept {
     return ppc::task::TypeOfTask::kMPI;
   }
@@ -17,14 +17,13 @@ public:
 
   static std::vector<Point> JarvisMarch(std::vector<Point> points);
 
-private:
+ private:
   bool ValidationImpl() override;
   bool PreProcessingImpl() override;
   bool RunImpl() override;
   bool PostProcessingImpl() override;
 
-  static std::vector<Point> FinalHull(int rank,
-                                      std::vector<Point> &all_hull_points);
+  static std::vector<Point> FinalHull(int rank, std::vector<Point> &all_hull_points);
 };
 
-} // namespace paramonov_from_one_to_all
+}  // namespace paramonov_from_one_to_all

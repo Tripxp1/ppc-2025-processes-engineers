@@ -8,13 +8,13 @@
 namespace paramonov_from_one_to_all {
 
 class ParamonovFromOneToAllProhodSEQ : public BaseTask {
-public:
+ public:
   static constexpr ppc::task::TypeOfTask GetStaticTypeOfTask() {
     return ppc::task::TypeOfTask::kSEQ;
   }
   explicit ParamonovFromOneToAllProhodSEQ(const InType &in);
 
-private:
+ private:
   bool ValidationImpl() override;
   bool PreProcessingImpl() override;
   bool RunImpl() override;
@@ -23,4 +23,4 @@ private:
   static std::vector<Point> JarvisMarch(std::vector<Point> points);
 };
 
-} // namespace paramonov_from_one_to_all
+}  // namespace paramonov_from_one_to_all

@@ -8,8 +8,7 @@
 
 namespace paramonov_from_one_to_all {
 
-ParamonovFromOneToAllProhodSEQ::ParamonovFromOneToAllProhodSEQ(
-    const InType &in) {
+ParamonovFromOneToAllProhodSEQ::ParamonovFromOneToAllProhodSEQ(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
   GetInput() = in;
   GetOutput().clear();
@@ -19,15 +18,16 @@ bool ParamonovFromOneToAllProhodSEQ::ValidationImpl() {
   return GetInput().size() >= 3;
 }
 
-bool ParamonovFromOneToAllProhodSEQ::PreProcessingImpl() { return true; }
+bool ParamonovFromOneToAllProhodSEQ::PreProcessingImpl() {
+  return true;
+}
 
 namespace {
 
 int LeftPoint(const std::vector<Point> &points) {
   int idx = 0;
   for (std::size_t i = 1; i < points.size(); ++i) {
-    if (points[i].x < points[idx].x ||
-        (points[i].x == points[idx].x && points[i].y < points[idx].y)) {
+    if (points[i].x < points[idx].x || (points[i].x == points[idx].x && points[i].y < points[idx].y)) {
       idx = static_cast<int>(i);
     }
   }
@@ -51,10 +51,9 @@ int ChooseNextBoundaryPoint(const std::vector<Point> &points, int p) {
   return q;
 }
 
-} // namespace
+}  // namespace
 
-std::vector<Point>
-ParamonovFromOneToAllProhodSEQ::JarvisMarch(std::vector<Point> points) {
+std::vector<Point> ParamonovFromOneToAllProhodSEQ::JarvisMarch(std::vector<Point> points) {
   if (points.size() < 3) {
     return points;
   }
@@ -79,6 +78,8 @@ bool ParamonovFromOneToAllProhodSEQ::RunImpl() {
   return true;
 }
 
-bool ParamonovFromOneToAllProhodSEQ::PostProcessingImpl() { return true; }
+bool ParamonovFromOneToAllProhodSEQ::PostProcessingImpl() {
+  return true;
+}
 
-} // namespace paramonov_from_one_to_all
+}  // namespace paramonov_from_one_to_all

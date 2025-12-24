@@ -11,8 +11,7 @@
 
 namespace paramonov_from_one_to_all {
 
-ParamonovFromOneToAllProhodMPI::ParamonovFromOneToAllProhodMPI(
-    const InType &in) {
+ParamonovFromOneToAllProhodMPI::ParamonovFromOneToAllProhodMPI(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
   GetInput() = in;
   GetOutput().clear();
@@ -22,15 +21,16 @@ bool ParamonovFromOneToAllProhodMPI::ValidationImpl() {
   return GetInput().size() >= 3;
 }
 
-bool ParamonovFromOneToAllProhodMPI::PreProcessingImpl() { return true; }
+bool ParamonovFromOneToAllProhodMPI::PreProcessingImpl() {
+  return true;
+}
 
 namespace {
 
 int LeftPoint(const std::vector<Point> &points) {
   int idx = 0;
   for (std::size_t i = 1; i < points.size(); ++i) {
-    if (points[i].x < points[idx].x ||
-        (points[i].x == points[idx].x && points[i].y < points[idx].y)) {
+    if (points[i].x < points[idx].x || (points[i].x == points[idx].x && points[i].y < points[idx].y)) {
       idx = static_cast<int>(i);
     }
   }
@@ -59,8 +59,7 @@ void BuildPointDatatype(MPI_Datatype *p_type) {
   MPI_Type_commit(p_type);
 }
 
-void ComputeScatterLayout(int rank, int size, int n, std::vector<int> &counts,
-                          std::vector<int> &displs) {
+void ComputeScatterLayout(int rank, int size, int n, std::vector<int> &counts, std::vector<int> &displs) {
   if (rank != 0) {
     return;
   }
@@ -78,10 +77,9 @@ void ComputeScatterLayout(int rank, int size, int n, std::vector<int> &counts,
   }
 }
 
-} // namespace
+}  // namespace
 
-std::vector<Point>
-ParamonovFromOneToAllProhodMPI::JarvisMarch(std::vector<Point> points) {
+std::vector<Point> ParamonovFromOneToAllProhodMPI::JarvisMarch(std::vector<Point> points) {
   if (points.size() < 3) {
     return points;
   }
@@ -101,9 +99,7 @@ ParamonovFromOneToAllProhodMPI::JarvisMarch(std::vector<Point> points) {
   return hull;
 }
 
-std::vector<Point>
-ParamonovFromOneToAllProhodMPI::FinalHull(int rank,
-                                          std::vector<Point> &all_hull_points) {
+std::vector<Point> ParamonovFromOneToAllProhodMPI::FinalHull(int rank, std::vector<Point> &all_hull_points) {
   if (rank != 0) {
     return {};
   }
@@ -139,9 +135,8 @@ bool ParamonovFromOneToAllProhodMPI::RunImpl() {
   const int l_size = (rank < (n % size)) ? ((n / size) + 1) : (n / size);
   std::vector<Point> local_points(static_cast<std::size_t>(l_size));
 
-  MPI_Scatterv(rank == 0 ? GetInput().data() : nullptr, counts.data(),
-               displs.data(), p_type, local_points.data(), l_size, p_type, 0,
-               MPI_COMM_WORLD);
+  MPI_Scatterv(rank == 0 ? GetInput().data() : nullptr, counts.data(), displs.data(), p_type, local_points.data(),
+               l_size, p_type, 0, MPI_COMM_WORLD);
 
   std::vector<Point> local_hull = JarvisMarch(local_points);
   int local_size = static_cast<int>(local_hull.size());
@@ -149,8 +144,7 @@ bool ParamonovFromOneToAllProhodMPI::RunImpl() {
   std::vector<int> recv_counts(size);
   std::vector<int> recv_displs(size);
 
-  MPI_Gather(&local_size, 1, MPI_INT, rank == 0 ? recv_counts.data() : nullptr,
-             1, MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Gather(&local_size, 1, MPI_INT, rank == 0 ? recv_counts.data() : nullptr, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
   int total = 0;
   if (rank == 0) {
@@ -161,8 +155,7 @@ bool ParamonovFromOneToAllProhodMPI::RunImpl() {
   }
 
   std::vector<Point> all_points(static_cast<std::size_t>(total));
-  MPI_Gatherv(local_hull.data(), local_size, p_type,
-              rank == 0 ? all_points.data() : nullptr, recv_counts.data(),
+  MPI_Gatherv(local_hull.data(), local_size, p_type, rank == 0 ? all_points.data() : nullptr, recv_counts.data(),
               recv_displs.data(), p_type, 0, MPI_COMM_WORLD);
 
   std::vector<Point> final_hull = FinalHull(rank, all_points);
@@ -180,6 +173,8 @@ bool ParamonovFromOneToAllProhodMPI::RunImpl() {
   return true;
 }
 
-bool ParamonovFromOneToAllProhodMPI::PostProcessingImpl() { return true; }
+bool ParamonovFromOneToAllProhodMPI::PostProcessingImpl() {
+  return true;
+}
 
-} // namespace paramonov_from_one_to_all
+}  // namespace paramonov_from_one_to_all

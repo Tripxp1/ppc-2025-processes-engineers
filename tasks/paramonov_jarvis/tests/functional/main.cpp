@@ -14,17 +14,15 @@
 
 namespace paramonov_from_one_to_all {
 
-class ParamonovFromOneToAllConvexHullTests
-    : public ppc::util::BaseRunFuncTests<InType, OutType, TestType> {
-public:
+class ParamonovFromOneToAllConvexHullTests : public ppc::util::BaseRunFuncTests<InType, OutType, TestType> {
+ public:
   static std::string PrintTestParam(const TestType &param) {
     return "Test_" + std::to_string(std::get<0>(param));
   }
 
-protected:
+ protected:
   void SetUp() override {
-    const auto &params = std::get<static_cast<std::size_t>(
-        ppc::util::GTestParamIndex::kTestParams)>(GetParam());
+    const auto &params = std::get<static_cast<std::size_t>(ppc::util::GTestParamIndex::kTestParams)>(GetParam());
     input_points_ = std::get<1>(params);
     expected_hull_ = std::get<2>(params);
   }
@@ -58,9 +56,11 @@ protected:
     return true;
   }
 
-  InType GetTestInputData() final { return input_points_; }
+  InType GetTestInputData() final {
+    return input_points_;
+  }
 
-private:
+ private:
   std::vector<Point> input_points_;
   std::vector<Point> expected_hull_;
 };
@@ -68,38 +68,30 @@ private:
 namespace {
 
 const std::array<TestType, 4> kJarvisTests = {
-    std::make_tuple(1, std::vector<Point>{{0, 0}, {2, 0}, {1, 1}},
-                    std::vector<Point>{{0, 0}, {2, 0}, {1, 1}}),
+    std::make_tuple(1, std::vector<Point>{{0, 0}, {2, 0}, {1, 1}}, std::vector<Point>{{0, 0}, {2, 0}, {1, 1}}),
 
-    std::make_tuple(2, std::vector<Point>{{0, 0}, {1, 0}, {2, 0}, {3, 0}},
-                    std::vector<Point>{{0, 0}, {3, 0}}),
+    std::make_tuple(2, std::vector<Point>{{0, 0}, {1, 0}, {2, 0}, {3, 0}}, std::vector<Point>{{0, 0}, {3, 0}}),
 
-    std::make_tuple(3,
-                    std::vector<Point>{{0, 0}, {0, 3}, {3, 3}, {3, 0}, {1, 1}},
+    std::make_tuple(3, std::vector<Point>{{0, 0}, {0, 3}, {3, 3}, {3, 0}, {1, 1}},
                     std::vector<Point>{{0, 0}, {3, 0}, {3, 3}, {0, 3}}),
 
-    std::make_tuple(
-        4, std::vector<Point>{{-2, -1}, {-1, -2}, {1, -1}, {2, 2}, {0, 0}},
-        std::vector<Point>{{-1, -2}, {1, -1}, {2, 2}, {-2, -1}})};
+    std::make_tuple(4, std::vector<Point>{{-2, -1}, {-1, -2}, {1, -1}, {2, 2}, {0, 0}},
+                    std::vector<Point>{{-1, -2}, {1, -1}, {2, 2}, {-2, -1}})};
 
-const auto kTasksList = std::tuple_cat(
-    ppc::util::AddFuncTask<ParamonovFromOneToAllProhodMPI, InType>(
-        kJarvisTests, PPC_SETTINGS_paramonov_from_one_to_all),
-    ppc::util::AddFuncTask<ParamonovFromOneToAllProhodSEQ, InType>(
-        kJarvisTests, PPC_SETTINGS_paramonov_from_one_to_all));
+const auto kTasksList = std::tuple_cat(ppc::util::AddFuncTask<ParamonovFromOneToAllProhodMPI, InType>(
+                                           kJarvisTests, PPC_SETTINGS_paramonov_from_one_to_all),
+                                       ppc::util::AddFuncTask<ParamonovFromOneToAllProhodSEQ, InType>(
+                                           kJarvisTests, PPC_SETTINGS_paramonov_from_one_to_all));
 
 const auto kGtestValues = ppc::util::ExpandToValues(kTasksList);
 
-const auto kTestName = ParamonovFromOneToAllConvexHullTests::PrintFuncTestName<
-    ParamonovFromOneToAllConvexHullTests>;
+const auto kTestName = ParamonovFromOneToAllConvexHullTests::PrintFuncTestName<ParamonovFromOneToAllConvexHullTests>;
 
 TEST_P(ParamonovFromOneToAllConvexHullTests, ConvexHullCorrectness) {
   ExecuteTest(GetParam());
 }
 
-INSTANTIATE_TEST_SUITE_P(JarvisAlgorithmTests,
-                         ParamonovFromOneToAllConvexHullTests, kGtestValues,
-                         kTestName);
+INSTANTIATE_TEST_SUITE_P(JarvisAlgorithmTests, ParamonovFromOneToAllConvexHullTests, kGtestValues, kTestName);
 
 TEST(ParamonovFromOneToAllValidation, MpiFailsForSmallInput) {
   InType points = {{0, 0}, {1, 1}};
@@ -113,5 +105,5 @@ TEST(ParamonovFromOneToAllValidation, SeqFailsForSinglePoint) {
   EXPECT_FALSE(task.Validation());
 }
 
-} // namespace
-} // namespace paramonov_from_one_to_all
+}  // namespace
+}  // namespace paramonov_from_one_to_all

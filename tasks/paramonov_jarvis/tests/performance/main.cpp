@@ -12,8 +12,7 @@
 
 namespace paramonov_from_one_to_all {
 
-static bool CheckValidHull(const std::vector<Point> &points,
-                           const std::vector<Point> &hull) {
+static bool CheckValidHull(const std::vector<Point> &points, const std::vector<Point> &hull) {
   if (hull.empty()) {
     return points.empty();
   }
@@ -36,12 +35,11 @@ static bool CheckValidHull(const std::vector<Point> &points,
   return true;
 }
 
-class ParamonovFromOneToAllProhodRunPerfTests
-    : public ppc::util::BaseRunPerfTests<InType, OutType> {
-public:
+class ParamonovFromOneToAllProhodRunPerfTests : public ppc::util::BaseRunPerfTests<InType, OutType> {
+ public:
   static constexpr std::size_t kSize = 1000000;
 
-protected:
+ protected:
   void SetUp() override {
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -62,9 +60,11 @@ protected:
     return CheckValidHull(i_points_, output_data);
   }
 
-  InType GetTestInputData() final { return i_points_; }
+  InType GetTestInputData() final {
+    return i_points_;
+  }
 
-private:
+ private:
   InType i_points_;
 };
 
@@ -73,14 +73,12 @@ TEST_P(ParamonovFromOneToAllProhodRunPerfTests, RunPerfModes) {
 }
 
 const auto kAllPerfTasks =
-    ppc::util::MakeAllPerfTasks<InType, ParamonovFromOneToAllProhodMPI,
-                                ParamonovFromOneToAllProhodSEQ>(
+    ppc::util::MakeAllPerfTasks<InType, ParamonovFromOneToAllProhodMPI, ParamonovFromOneToAllProhodSEQ>(
         PPC_SETTINGS_paramonov_from_one_to_all);
 
 const auto kGtestValues = ppc::util::TupleToGTestValues(kAllPerfTasks);
 
-INSTANTIATE_TEST_SUITE_P(
-    RunModeTests, ParamonovFromOneToAllProhodRunPerfTests, kGtestValues,
-    ParamonovFromOneToAllProhodRunPerfTests::CustomPerfTestName);
+INSTANTIATE_TEST_SUITE_P(RunModeTests, ParamonovFromOneToAllProhodRunPerfTests, kGtestValues,
+                         ParamonovFromOneToAllProhodRunPerfTests::CustomPerfTestName);
 
-} // namespace paramonov_from_one_to_all
+}  // namespace paramonov_from_one_to_all
