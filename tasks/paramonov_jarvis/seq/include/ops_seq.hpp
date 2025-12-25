@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "paramonov_jarvis/common/include/common.hpp"
 #include "task/include/task.hpp"
 
@@ -18,7 +20,7 @@ class ParamonovJarvisSEQ : public BaseTask {
   bool RunImpl() override;
   bool PostProcessingImpl() override;
 
-  bool valid_ = false;
+  static std::vector<Point> JarvisMarch(std::vector<Point> points);
 };
 
 }  // namespace paramonov_jarvis

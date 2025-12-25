@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "paramonov_jarvis/common/include/common.hpp"
 #include "task/include/task.hpp"
 
@@ -7,10 +9,13 @@ namespace paramonov_jarvis {
 
 class ParamonovJarvisMPI : public BaseTask {
  public:
-  static constexpr ppc::task::TypeOfTask GetStaticTypeOfTask() {
+  static constexpr ppc::task::TypeOfTask GetStaticTypeOfTask() noexcept {
     return ppc::task::TypeOfTask::kMPI;
   }
+
   explicit ParamonovJarvisMPI(const InType &in);
+
+  static std::vector<Point> JarvisMarch(std::vector<Point> points);
 
  private:
   bool ValidationImpl() override;
@@ -18,7 +23,7 @@ class ParamonovJarvisMPI : public BaseTask {
   bool RunImpl() override;
   bool PostProcessingImpl() override;
 
-  bool valid_ = false;
+  static std::vector<Point> FinalHull(int rank, std::vector<Point> &all_hull_points);
 };
 
 }  // namespace paramonov_jarvis
