@@ -1,24 +1,24 @@
-#include "paramonov_from_one_to_all/seq/include/ops_seq.hpp"
+#include "paramonov_jarvis/seq/include/ops_seq.hpp"
 
 #include <cstddef>
 #include <cstdint>
 #include <vector>
 
-#include "paramonov_from_one_to_all/common/include/common.hpp"
+#include "paramonov_jarvis/common/include/common.hpp"
 
-namespace paramonov_from_one_to_all {
+namespace paramonov_jarvis {
 
-ParamonovFromOneToAllProhodSEQ::ParamonovFromOneToAllProhodSEQ(const InType &in) {
+ParamonovJarvisSEQ::ParamonovJarvisSEQ(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
   GetInput() = in;
   GetOutput().clear();
 }
 
-bool ParamonovFromOneToAllProhodSEQ::ValidationImpl() {
+bool ParamonovJarvisSEQ::ValidationImpl() {
   return GetInput().size() >= 3;
 }
 
-bool ParamonovFromOneToAllProhodSEQ::PreProcessingImpl() {
+bool ParamonovJarvisSEQ::PreProcessingImpl() {
   return true;
 }
 
@@ -53,7 +53,7 @@ int ChooseNextBoundaryPoint(const std::vector<Point> &points, int p) {
 
 }  // namespace
 
-std::vector<Point> ParamonovFromOneToAllProhodSEQ::JarvisMarch(std::vector<Point> points) {
+std::vector<Point> ParamonovJarvisSEQ::JarvisMarch(std::vector<Point> points) {
   if (points.size() < 3) {
     return points;
   }
@@ -73,13 +73,13 @@ std::vector<Point> ParamonovFromOneToAllProhodSEQ::JarvisMarch(std::vector<Point
   return hull;
 }
 
-bool ParamonovFromOneToAllProhodSEQ::RunImpl() {
+bool ParamonovJarvisSEQ::RunImpl() {
   GetOutput() = JarvisMarch(GetInput());
   return true;
 }
 
-bool ParamonovFromOneToAllProhodSEQ::PostProcessingImpl() {
+bool ParamonovJarvisSEQ::PostProcessingImpl() {
   return true;
 }
 
-}  // namespace paramonov_from_one_to_all
+}  // namespace paramonov_jarvis

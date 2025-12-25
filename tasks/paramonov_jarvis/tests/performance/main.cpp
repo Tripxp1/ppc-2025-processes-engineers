@@ -5,12 +5,12 @@
 #include <random>
 #include <vector>
 
-#include "paramonov_from_one_to_all/common/include/common.hpp"
-#include "paramonov_from_one_to_all/mpi/include/ops_mpi.hpp"
-#include "paramonov_from_one_to_all/seq/include/ops_seq.hpp"
+#include "paramonov_jarvis/common/include/common.hpp"
+#include "paramonov_jarvis/mpi/include/ops_mpi.hpp"
+#include "paramonov_jarvis/seq/include/ops_seq.hpp"
 #include "util/include/perf_test_util.hpp"
 
-namespace paramonov_from_one_to_all {
+namespace paramonov_jarvis {
 
 static bool CheckValidHull(const std::vector<Point> &points, const std::vector<Point> &hull) {
   if (hull.empty()) {
@@ -35,7 +35,7 @@ static bool CheckValidHull(const std::vector<Point> &points, const std::vector<P
   return true;
 }
 
-class ParamonovFromOneToAllProhodRunPerfTests : public ppc::util::BaseRunPerfTests<InType, OutType> {
+class ParamonovJarvisRunPerfTests : public ppc::util::BaseRunPerfTests<InType, OutType> {
  public:
   static constexpr std::size_t kSize = 1000000;
 
@@ -68,17 +68,16 @@ class ParamonovFromOneToAllProhodRunPerfTests : public ppc::util::BaseRunPerfTes
   InType i_points_;
 };
 
-TEST_P(ParamonovFromOneToAllProhodRunPerfTests, RunPerfModes) {
+TEST_P(ParamonovJarvisRunPerfTests, RunPerfModes) {
   ExecuteTest(GetParam());
 }
 
 const auto kAllPerfTasks =
-    ppc::util::MakeAllPerfTasks<InType, ParamonovFromOneToAllProhodMPI, ParamonovFromOneToAllProhodSEQ>(
-        PPC_SETTINGS_paramonov_from_one_to_all);
+    ppc::util::MakeAllPerfTasks<InType, ParamonovJarvisMPI, ParamonovJarvisSEQ>(PPC_SETTINGS_paramonov_jarvis);
 
 const auto kGtestValues = ppc::util::TupleToGTestValues(kAllPerfTasks);
 
-INSTANTIATE_TEST_SUITE_P(RunModeTests, ParamonovFromOneToAllProhodRunPerfTests, kGtestValues,
-                         ParamonovFromOneToAllProhodRunPerfTests::CustomPerfTestName);
+INSTANTIATE_TEST_SUITE_P(RunModeTests, ParamonovJarvisRunPerfTests, kGtestValues,
+                         ParamonovJarvisRunPerfTests::CustomPerfTestName);
 
-}  // namespace paramonov_from_one_to_all
+}  // namespace paramonov_jarvis

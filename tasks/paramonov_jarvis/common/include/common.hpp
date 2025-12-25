@@ -7,7 +7,7 @@
 
 #include "task/include/task.hpp"
 
-namespace paramonov_from_one_to_all {
+namespace paramonov_jarvis {
 
 struct Point {
   int x{};
@@ -47,4 +47,4 @@ using OutType = std::vector<Point>;
 using TestType = std::tuple<int, std::vector<Point>, std::vector<Point>>;
 using BaseTask = ppc::task::Task<InType, OutType>;
 
-}  // namespace paramonov_from_one_to_all
+}  // namespace paramonov_jarvis

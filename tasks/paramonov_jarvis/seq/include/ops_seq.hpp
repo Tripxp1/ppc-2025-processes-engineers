@@ -2,17 +2,17 @@
 
 #include <vector>
 
-#include "paramonov_from_one_to_all/common/include/common.hpp"
+#include "paramonov_jarvis/common/include/common.hpp"
 #include "task/include/task.hpp"
 
-namespace paramonov_from_one_to_all {
+namespace paramonov_jarvis {
 
-class ParamonovFromOneToAllProhodSEQ : public BaseTask {
+class ParamonovJarvisSEQ : public BaseTask {
  public:
   static constexpr ppc::task::TypeOfTask GetStaticTypeOfTask() {
     return ppc::task::TypeOfTask::kSEQ;
   }
-  explicit ParamonovFromOneToAllProhodSEQ(const InType &in);
+  explicit ParamonovJarvisSEQ(const InType &in);
 
  private:
   bool ValidationImpl() override;
@@ -23,4 +23,4 @@ class ParamonovFromOneToAllProhodSEQ : public BaseTask {
   static std::vector<Point> JarvisMarch(std::vector<Point> points);
 };
 
-}  // namespace paramonov_from_one_to_all
+}  // namespace paramonov_jarvis

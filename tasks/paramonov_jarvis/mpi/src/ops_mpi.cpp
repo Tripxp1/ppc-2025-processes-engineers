@@ -1,4 +1,4 @@
-#include "paramonov_from_one_to_all/mpi/include/ops_mpi.hpp"
+#include "paramonov_jarvis/mpi/include/ops_mpi.hpp"
 
 #include <mpi.h>
 
@@ -7,21 +7,21 @@
 #include <utility>
 #include <vector>
 
-#include "paramonov_from_one_to_all/common/include/common.hpp"
+#include "paramonov_jarvis/common/include/common.hpp"
 
-namespace paramonov_from_one_to_all {
+namespace paramonov_jarvis {
 
-ParamonovFromOneToAllProhodMPI::ParamonovFromOneToAllProhodMPI(const InType &in) {
+ParamonovJarvisMPI::ParamonovJarvisMPI(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
   GetInput() = in;
   GetOutput().clear();
 }
 
-bool ParamonovFromOneToAllProhodMPI::ValidationImpl() {
+bool ParamonovJarvisMPI::ValidationImpl() {
   return GetInput().size() >= 3;
 }
 
-bool ParamonovFromOneToAllProhodMPI::PreProcessingImpl() {
+bool ParamonovJarvisMPI::PreProcessingImpl() {
   return true;
 }
 
@@ -79,7 +79,7 @@ void ComputeScatterLayout(int rank, int size, int n, std::vector<int> &counts, s
 
 }  // namespace
 
-std::vector<Point> ParamonovFromOneToAllProhodMPI::JarvisMarch(std::vector<Point> points) {
+std::vector<Point> ParamonovJarvisMPI::JarvisMarch(std::vector<Point> points) {
   if (points.size() < 3) {
     return points;
   }
@@ -99,14 +99,14 @@ std::vector<Point> ParamonovFromOneToAllProhodMPI::JarvisMarch(std::vector<Point
   return hull;
 }
 
-std::vector<Point> ParamonovFromOneToAllProhodMPI::FinalHull(int rank, std::vector<Point> &all_hull_points) {
+std::vector<Point> ParamonovJarvisMPI::FinalHull(int rank, std::vector<Point> &all_hull_points) {
   if (rank != 0) {
     return {};
   }
   return JarvisMarch(std::move(all_hull_points));
 }
 
-bool ParamonovFromOneToAllProhodMPI::RunImpl() {
+bool ParamonovJarvisMPI::RunImpl() {
   int rank = 0;
   int size = 0;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -173,8 +173,8 @@ bool ParamonovFromOneToAllProhodMPI::RunImpl() {
   return true;
 }
 
-bool ParamonovFromOneToAllProhodMPI::PostProcessingImpl() {
+bool ParamonovJarvisMPI::PostProcessingImpl() {
   return true;
 }
 
-}  // namespace paramonov_from_one_to_all
+}  // namespace paramonov_jarvis

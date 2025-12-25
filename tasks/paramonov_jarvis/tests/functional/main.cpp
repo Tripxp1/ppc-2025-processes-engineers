@@ -6,15 +6,15 @@
 #include <tuple>
 #include <vector>
 
-#include "paramonov_from_one_to_all/common/include/common.hpp"
-#include "paramonov_from_one_to_all/mpi/include/ops_mpi.hpp"
-#include "paramonov_from_one_to_all/seq/include/ops_seq.hpp"
+#include "paramonov_jarvis/common/include/common.hpp"
+#include "paramonov_jarvis/mpi/include/ops_mpi.hpp"
+#include "paramonov_jarvis/seq/include/ops_seq.hpp"
 #include "util/include/func_test_util.hpp"
 #include "util/include/util.hpp"
 
-namespace paramonov_from_one_to_all {
+namespace paramonov_jarvis {
 
-class ParamonovFromOneToAllConvexHullTests : public ppc::util::BaseRunFuncTests<InType, OutType, TestType> {
+class ParamonovJarvisConvexHullTests : public ppc::util::BaseRunFuncTests<InType, OutType, TestType> {
  public:
   static std::string PrintTestParam(const TestType &param) {
     return "Test_" + std::to_string(std::get<0>(param));
@@ -78,32 +78,31 @@ const std::array<TestType, 4> kJarvisTests = {
     std::make_tuple(4, std::vector<Point>{{-2, -1}, {-1, -2}, {1, -1}, {2, 2}, {0, 0}},
                     std::vector<Point>{{-1, -2}, {1, -1}, {2, 2}, {-2, -1}})};
 
-const auto kTasksList = std::tuple_cat(ppc::util::AddFuncTask<ParamonovFromOneToAllProhodMPI, InType>(
-                                           kJarvisTests, PPC_SETTINGS_paramonov_from_one_to_all),
-                                       ppc::util::AddFuncTask<ParamonovFromOneToAllProhodSEQ, InType>(
-                                           kJarvisTests, PPC_SETTINGS_paramonov_from_one_to_all));
+const auto kTasksList =
+    std::tuple_cat(ppc::util::AddFuncTask<ParamonovJarvisMPI, InType>(kJarvisTests, PPC_SETTINGS_paramonov_jarvis),
+                   ppc::util::AddFuncTask<ParamonovJarvisSEQ, InType>(kJarvisTests, PPC_SETTINGS_paramonov_jarvis));
 
 const auto kGtestValues = ppc::util::ExpandToValues(kTasksList);
 
-const auto kTestName = ParamonovFromOneToAllConvexHullTests::PrintFuncTestName<ParamonovFromOneToAllConvexHullTests>;
+const auto kTestName = ParamonovJarvisConvexHullTests::PrintFuncTestName<ParamonovJarvisConvexHullTests>;
 
-TEST_P(ParamonovFromOneToAllConvexHullTests, ConvexHullCorrectness) {
+TEST_P(ParamonovJarvisConvexHullTests, ConvexHullCorrectness) {
   ExecuteTest(GetParam());
 }
 
-INSTANTIATE_TEST_SUITE_P(JarvisAlgorithmTests, ParamonovFromOneToAllConvexHullTests, kGtestValues, kTestName);
+INSTANTIATE_TEST_SUITE_P(JarvisAlgorithmTests, ParamonovJarvisConvexHullTests, kGtestValues, kTestName);
 
-TEST(ParamonovFromOneToAllValidation, MpiFailsForSmallInput) {
+TEST(ParamonovJarvisValidation, MpiFailsForSmallInput) {
   InType points = {{0, 0}, {1, 1}};
-  ParamonovFromOneToAllProhodMPI task(points);
+  ParamonovJarvisMPI task(points);
   EXPECT_FALSE(task.Validation());
 }
 
-TEST(ParamonovFromOneToAllValidation, SeqFailsForSinglePoint) {
+TEST(ParamonovJarvisValidation, SeqFailsForSinglePoint) {
   InType points = {{0, 0}};
-  ParamonovFromOneToAllProhodSEQ task(points);
+  ParamonovJarvisSEQ task(points);
   EXPECT_FALSE(task.Validation());
 }
 
 }  // namespace
-}  // namespace paramonov_from_one_to_all
+}  // namespace paramonov_jarvis

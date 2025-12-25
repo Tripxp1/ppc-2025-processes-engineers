@@ -2,18 +2,18 @@
 
 #include <vector>
 
-#include "paramonov_from_one_to_all/common/include/common.hpp"
+#include "paramonov_jarvis/common/include/common.hpp"
 #include "task/include/task.hpp"
 
-namespace paramonov_from_one_to_all {
+namespace paramonov_jarvis {
 
-class ParamonovFromOneToAllProhodMPI : public BaseTask {
+class ParamonovJarvisMPI : public BaseTask {
  public:
   static constexpr ppc::task::TypeOfTask GetStaticTypeOfTask() noexcept {
     return ppc::task::TypeOfTask::kMPI;
   }
 
-  explicit ParamonovFromOneToAllProhodMPI(const InType &in);
+  explicit ParamonovJarvisMPI(const InType &in);
 
   static std::vector<Point> JarvisMarch(std::vector<Point> points);
 
@@ -26,4 +26,4 @@ class ParamonovFromOneToAllProhodMPI : public BaseTask {
   static std::vector<Point> FinalHull(int rank, std::vector<Point> &all_hull_points);
 };
 
-}  // namespace paramonov_from_one_to_all
+}  // namespace paramonov_jarvis
