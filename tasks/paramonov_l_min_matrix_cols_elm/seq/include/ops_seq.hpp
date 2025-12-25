@@ -5,20 +5,18 @@
 
 namespace paramonov_l_min_matrix_cols_elm {
 
-class ParamonovLMinMatrixColsElmSEQ : public BaseTask {
+class ParamonovLMinMatrixSEQ : public BaseTask {
  public:
   static constexpr ppc::task::TypeOfTask GetStaticTypeOfTask() {
     return ppc::task::TypeOfTask::kSEQ;
   }
-  explicit ParamonovLMinMatrixColsElmSEQ(const InType &in);
+  explicit ParamonovLMinMatrixSEQ(const InType &in);
 
  private:
   bool ValidationImpl() override;
   bool PreProcessingImpl() override;
   bool RunImpl() override;
   bool PostProcessingImpl() override;
-
-  bool valid_ = false;
 };
 
 }  // namespace paramonov_l_min_matrix_cols_elm

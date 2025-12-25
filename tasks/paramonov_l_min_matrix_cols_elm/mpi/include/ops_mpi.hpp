@@ -5,20 +5,18 @@
 
 namespace paramonov_l_min_matrix_cols_elm {
 
-class ParamonovLMinMatrixColsElmMPI : public BaseTask {
+class ParamonovLMinMatrixMPI : public BaseTask {
  public:
   static constexpr ppc::task::TypeOfTask GetStaticTypeOfTask() {
     return ppc::task::TypeOfTask::kMPI;
   }
-  explicit ParamonovLMinMatrixColsElmMPI(const InType &in);
+  explicit ParamonovLMinMatrixMPI(const InType &in);
 
  private:
   bool ValidationImpl() override;
   bool PreProcessingImpl() override;
   bool RunImpl() override;
   bool PostProcessingImpl() override;
-
-  bool valid_ = false;
 };
 
 }  // namespace paramonov_l_min_matrix_cols_elm
