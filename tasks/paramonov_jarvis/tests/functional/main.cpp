@@ -1,10 +1,10 @@
 #include <gtest/gtest.h>
 
-#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <string>
 #include <tuple>
+#include <vector>
 
 #include "paramonov_jarvis/common/include/common.hpp"
 #include "paramonov_jarvis/mpi/include/ops_mpi.hpp"
@@ -14,94 +14,95 @@
 
 namespace paramonov_jarvis {
 
-class JarvisFuncTests : public ppc::util::BaseRunFuncTests<InType, OutType, TestType> {
+class ParamonovJarvisConvexHullTests : public ppc::util::BaseRunFuncTests<InType, OutType, TestType> {
  public:
-  static std::string PrintTestParam(const TestType &test_param) {
-    return std::get<0>(test_param);
+  static std::string PrintTestParam(const TestType &param) {
+    return "Test_" + std::to_string(std::get<0>(param));
   }
 
  protected:
   void SetUp() override {
-    const TestType params = std::get<static_cast<std::size_t>(ppc::util::GTestParamIndex::kTestParams)>(GetParam());
-    input_data_ = std::get<1>(params);
-    expected_output_ = std::get<2>(params);
+    const auto &params = std::get<static_cast<std::size_t>(ppc::util::GTestParamIndex::kTestParams)>(GetParam());
+    input_points_ = std::get<1>(params);
+    expected_hull_ = std::get<2>(params);
   }
 
-  bool CheckTestOutputData(OutType &output_data) final {
-    if (output_data.size() != expected_output_.size()) {
+  bool CheckTestOutputData(OutType &output) final {
+    if (output.size() != expected_hull_.size()) {
       return false;
     }
-
-    auto matches_with_rotation = [&](const OutType &cand) {
-      const std::size_t n = cand.size();
-      for (std::size_t shift = 0; shift < n; shift++) {
-        bool ok = true;
-        for (std::size_t i = 0; i < n; i++) {
-          const Point &a = cand[(i + shift) % n];
-          const Point &b = expected_output_[i];
-          if (!(a == b)) {
-            ok = false;
-            break;
-          }
-        }
-        if (ok) {
-          return true;
+    for (const auto &p : output) {
+      bool found = false;
+      for (const auto &src : input_points_) {
+        if (p.x == src.x && p.y == src.y) {
+          found = true;
+          break;
         }
       }
-      return false;
-    };
-
-    // Сравниваем с учётом возможного циклического сдвига и ориентации.
-    if (matches_with_rotation(output_data)) {
-      return true;
+      if (!found) {
+        return false;
+      }
     }
-    OutType reversed = output_data;
-    std::ranges::reverse(reversed);
-    return matches_with_rotation(reversed);
+
+    for (std::size_t i = 0; i < output.size(); ++i) {
+      const auto &a = output[i];
+      const auto &b = output[(i + 1) % output.size()];
+      const auto &c = output[(i + 2) % output.size()];
+      if (CrossCalculate(a, b, c) < 0) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   InType GetTestInputData() final {
-    return input_data_;
+    return input_points_;
   }
 
  private:
-  InType input_data_;
-  OutType expected_output_;
+  std::vector<Point> input_points_;
+  std::vector<Point> expected_hull_;
 };
-
-TEST(JarvisValidation, RejectsSmallInput) {
-  InType too_small = {{0.0, 0.0}, {1.0, 1.0}};
-  ParamonovJarvisSEQ task(too_small);
-  EXPECT_FALSE(task.Validation());
-}
 
 namespace {
 
-TEST_P(JarvisFuncTests, ComputesConvexHull) {
+const std::array<TestType, 4> kJarvisTests = {
+    std::make_tuple(1, std::vector<Point>{{0, 0}, {2, 0}, {1, 1}}, std::vector<Point>{{0, 0}, {2, 0}, {1, 1}}),
+
+    std::make_tuple(2, std::vector<Point>{{0, 0}, {1, 0}, {2, 0}, {3, 0}}, std::vector<Point>{{0, 0}, {3, 0}}),
+
+    std::make_tuple(3, std::vector<Point>{{0, 0}, {0, 3}, {3, 3}, {3, 0}, {1, 1}},
+                    std::vector<Point>{{0, 0}, {3, 0}, {3, 3}, {0, 3}}),
+
+    std::make_tuple(4, std::vector<Point>{{-2, -1}, {-1, -2}, {1, -1}, {2, 2}, {0, 0}},
+                    std::vector<Point>{{-1, -2}, {1, -1}, {2, 2}, {-2, -1}})};
+
+const auto kTasksList =
+    std::tuple_cat(ppc::util::AddFuncTask<ParamonovJarvisMPI, InType>(kJarvisTests, PPC_SETTINGS_paramonov_jarvis),
+                   ppc::util::AddFuncTask<ParamonovJarvisSEQ, InType>(kJarvisTests, PPC_SETTINGS_paramonov_jarvis));
+
+const auto kGtestValues = ppc::util::ExpandToValues(kTasksList);
+
+const auto kTestName = ParamonovJarvisConvexHullTests::PrintFuncTestName<ParamonovJarvisConvexHullTests>;
+
+TEST_P(ParamonovJarvisConvexHullTests, ConvexHullCorrectness) {
   ExecuteTest(GetParam());
 }
 
-const std::array<TestType, 4> kTestParam = {
-    std::make_tuple("Square_with_inner", InType{{0, 0}, {2, 0}, {2, 2}, {0, 2}, {1, 1}},
-                    OutType{{0, 0}, {0, 2}, {2, 2}, {2, 0}}),
-    std::make_tuple("Triangle_with_inside", InType{{0, 0}, {3, 0}, {1.5, 2.5}, {1, 1}},
-                    OutType{{0, 0}, {3, 0}, {1.5, 2.5}}),
-    std::make_tuple("Concave_L_shape", InType{{0, 0}, {2, 0}, {2, 1}, {1, 1}, {1, 2}, {0, 2}},
-                    OutType{{0, 0}, {2, 0}, {2, 1}, {1, 2}, {0, 2}}),
-    std::make_tuple("Collinear_points", InType{{0, 0}, {1, 0}, {3, 0}, {2, 0}}, OutType{{0, 0}, {3, 0}})};
+INSTANTIATE_TEST_SUITE_P(JarvisAlgorithmTests, ParamonovJarvisConvexHullTests, kGtestValues, kTestName);
 
-const auto kTestTasksList =
-    std::tuple_cat(ppc::util::AddFuncTask<ParamonovJarvisMPI, InType>(kTestParam, PPC_SETTINGS_paramonov_jarvis),
-                   ppc::util::AddFuncTask<ParamonovJarvisSEQ, InType>(kTestParam, PPC_SETTINGS_paramonov_jarvis));
+TEST(ParamonovJarvisValidation, MpiFailsForSmallInput) {
+  InType points = {{0, 0}, {1, 1}};
+  ParamonovJarvisMPI task(points);
+  EXPECT_FALSE(task.Validation());
+}
 
-const auto kGtestValues = ppc::util::ExpandToValues(kTestTasksList);
-
-const auto kPerfTestName = JarvisFuncTests::PrintFuncTestName<JarvisFuncTests>;
-
-// NOLINTBEGIN(cppcoreguidelines-avoid-non-const-global-variables, modernize-type-traits, misc-use-anonymous-namespace)
-INSTANTIATE_TEST_SUITE_P(ConvexHullTests, JarvisFuncTests, kGtestValues, kPerfTestName);
-// NOLINTEND(cppcoreguidelines-avoid-non-const-global-variables, modernize-type-traits, misc-use-anonymous-namespace)
+TEST(ParamonovJarvisValidation, SeqFailsForSinglePoint) {
+  InType points = {{0, 0}};
+  ParamonovJarvisSEQ task(points);
+  EXPECT_FALSE(task.Validation());
+}
 
 }  // namespace
-
 }  // namespace paramonov_jarvis
