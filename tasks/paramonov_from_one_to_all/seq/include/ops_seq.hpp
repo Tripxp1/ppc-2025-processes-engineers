@@ -1,24 +1,22 @@
 #pragma once
 
-#include "paramonov_jarvis/common/include/common.hpp"
+#include "paramonov_from_one_to_all/common/include/common.hpp"
 #include "task/include/task.hpp"
 
-namespace paramonov_jarvis {
+namespace paramonov_from_one_to_all {
 
-class ParamonovJarvisSEQ : public BaseTask {
+class ParamonovFromOneToAllBroadcastSEQ : public BaseTask {
  public:
   static constexpr ppc::task::TypeOfTask GetStaticTypeOfTask() {
     return ppc::task::TypeOfTask::kSEQ;
   }
-  explicit ParamonovJarvisSEQ(const InType &in);
+  explicit ParamonovFromOneToAllBroadcastSEQ(const InType &in);
 
  private:
   bool ValidationImpl() override;
   bool PreProcessingImpl() override;
   bool RunImpl() override;
   bool PostProcessingImpl() override;
-
-  bool valid_ = false;
 };
 
-}  // namespace paramonov_jarvis
+}  // namespace paramonov_from_one_to_all
