@@ -1,16 +1,16 @@
 #pragma once
 
-#include "Paramonov_L_Min_Matrix_Cols_Elm/common/include/common.hpp"
+#include "paramonov_l_min_matrix_cols_elm/common/include/common.hpp"
 #include "task/include/task.hpp"
 
 namespace paramonov_l_min_matrix_cols_elm {
 
-class ParamonovLMinMatrixColsElmSEQ : public BaseTask {
+class ParamonovLMinMatrixSEQ : public BaseTask {
  public:
   static constexpr ppc::task::TypeOfTask GetStaticTypeOfTask() {
     return ppc::task::TypeOfTask::kSEQ;
   }
-  explicit ParamonovLMinMatrixColsElmSEQ(const InType &in);
+  explicit ParamonovLMinMatrixSEQ(const InType &in);
 
  private:
   bool ValidationImpl() override;

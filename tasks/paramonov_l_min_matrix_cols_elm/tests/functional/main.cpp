@@ -1,21 +1,54 @@
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <limits>
+#include <memory>
 #include <string>
 #include <tuple>
+#include <utility>
 #include <vector>
 
-#include "Paramonov_L_Min_Matrix_Cols_Elm/common/include/common.hpp"
-#include "Paramonov_L_Min_Matrix_Cols_Elm/mpi/include/ops_mpi.hpp"
-#include "Paramonov_L_Min_Matrix_Cols_Elm/seq/include/ops_seq.hpp"
+#include "paramonov_l_min_matrix_cols_elm/common/include/common.hpp"
+#include "paramonov_l_min_matrix_cols_elm/mpi/include/ops_mpi.hpp"
+#include "paramonov_l_min_matrix_cols_elm/seq/include/ops_seq.hpp"
 #include "util/include/func_test_util.hpp"
 #include "util/include/util.hpp"
 
 namespace paramonov_l_min_matrix_cols_elm {
 
-class MinColumnRunFuncTestsProcesses : public ppc::util::BaseRunFuncTests<InType, OutType, TestType> {
+namespace {
+
+inline InType Generate(int64_t i, int64_t j) {
+  uint64_t seed = (i * 100000007ULL + j * 1000000009ULL) ^ 42ULL;
+
+  seed ^= seed >> 12;
+  seed ^= seed << 25;
+  seed ^= seed >> 27;
+  uint64_t value = seed * 0x2545F4914F6CDD1DULL;
+
+  auto result = static_cast<InType>((value % 2000001ULL) - 1000000);
+  return result;
+}
+
+inline std::vector<InType> CalculateExpectedColumnMins(InType n) {
+  std::vector<InType> expected_mins(static_cast<size_t>(n), std::numeric_limits<InType>::max());
+
+  for (InType i = 0; i < n; i++) {
+    for (InType j = 0; j < n; j++) {
+      InType value = Generate(static_cast<int64_t>(i), static_cast<int64_t>(j));
+      expected_mins[static_cast<size_t>(j)] = std::min(value, expected_mins[static_cast<size_t>(j)]);
+    }
+  }
+
+  return expected_mins;
+}
+
+}  // anonymous namespace
+
+class ParamonovLMinMatrixTestProcesses : public ppc::util::BaseRunFuncTests<InType, OutType, TestType> {
  public:
   static std::string PrintTestParam(const TestType &test_param) {
     return std::to_string(std::get<0>(test_param)) + "_" + std::get<1>(test_param);
@@ -24,60 +57,22 @@ class MinColumnRunFuncTestsProcesses : public ppc::util::BaseRunFuncTests<InType
  protected:
   void SetUp() override {
     TestType params = std::get<static_cast<std::size_t>(ppc::util::GTestParamIndex::kTestParams)>(GetParam());
-    const int case_id = std::get<0>(params);
-    input_data_ = InType{};
-    expected_ = OutType{};
-
-    switch (case_id) {
-      case 0:
-        input_data_ = {{3, 5, -1}, {0, -2, 10}, {7, 1, -5}};
-        expected_ = {0, -2, -5};
-        break;
-      case 1:
-        input_data_ = {{4, -1, 2}};
-        expected_ = {4, -1, 2};
-        break;
-      case 2:
-        input_data_ = {{-10, 3}, {-5, 2}, {-20, 4}};
-        expected_ = {-20, 2};
-        break;
-      case 3:
-        input_data_ = {{7}};
-        expected_ = {7};
-        break;
-      case 4:
-        input_data_ = {{1, 2}, {3, 4}};
-        expected_ = {1, 2};
-        break;
-      case 5:
-        input_data_ = {{10, 20}};
-        expected_ = {10, 20};
-        break;
-      case 6:
-        input_data_ = {{3}, {1}, {2}};
-        expected_ = {1};
-        break;
-      case 7:
-        input_data_ = {{5, 5, 5}, {5, 5, 5}};
-        expected_ = {5, 5, 5};
-        break;
-      case 8:
-        input_data_ = {{-3}, {-1}, {-2}, {-5}};
-        expected_ = {-5};
-        break;
-      case 9:
-        input_data_ = {{10, 20}, {30, 5}, {15, 25}};
-        expected_ = {10, 5};
-        break;
-      default:
-        input_data_ = {{1}};
-        expected_ = {1};
-        break;
-    }
+    input_data_ = std::get<0>(params);
+    expected_mins_ = CalculateExpectedColumnMins(input_data_);
   }
 
   bool CheckTestOutputData(OutType &output_data) final {
-    return output_data == expected_;
+    if (output_data.size() != static_cast<size_t>(input_data_)) {
+      return false;
+    }
+
+    for (std::size_t j = 0; j < output_data.size(); j++) {
+      if (output_data[j] != expected_mins_[j]) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   InType GetTestInputData() final {
@@ -85,78 +80,142 @@ class MinColumnRunFuncTestsProcesses : public ppc::util::BaseRunFuncTests<InType
   }
 
  private:
-  InType input_data_;
-  OutType expected_;
+  InType input_data_ = 0;
+  std::vector<InType> expected_mins_;
 };
 
 namespace {
 
-TEST_P(MinColumnRunFuncTestsProcesses, MinColumnBasicCases) {
+TEST_P(ParamonovLMinMatrixTestProcesses, ComputesColumnMinimumsForDiverseSizes) {
   ExecuteTest(GetParam());
 }
 
-const std::array<TestType, 10> kTestParam = {
-    std::make_tuple(0, "rectangular"),
-    std::make_tuple(1, "single_row"),
-    std::make_tuple(2, "negative_numbers"),
-    std::make_tuple(3, "single_element_matrix"),
-    std::make_tuple(4, "two_by_two_matrix"),
-    std::make_tuple(5, "single_row_two_columns"),
-    std::make_tuple(6, "three_rows_one_column"),
-    std::make_tuple(7, "all_equal_values"),
-    std::make_tuple(8, "single_column_negative"),
-    std::make_tuple(9, "mixed_values_matrix"),
-};
+const std::array<TestType, 11> kFunctionalParams = {
+    std::make_tuple(1, "tuple_unit"),  std::make_tuple(2, "tuple_even"),   std::make_tuple(3, "tuple_odd"),
+    std::make_tuple(5, "tuple_5"),     std::make_tuple(17, "tuple_prime"), std::make_tuple(64, "tuple_64"),
+    std::make_tuple(99, "tuple_99"),   std::make_tuple(100, "tuple_100"),  std::make_tuple(128, "tuple_128"),
+    std::make_tuple(256, "tuple_256"), std::make_tuple(512, "tuple_512")};
 
-const auto kTestTasksList = std::tuple_cat(ppc::util::AddFuncTask<ParamonovLMinMatrixColsElmMPI, InType>(
-                                               kTestParam, PPC_SETTINGS_Paramonov_L_Min_Matrix_Cols_Elm),
-                                           ppc::util::AddFuncTask<ParamonovLMinMatrixColsElmSEQ, InType>(
-                                               kTestParam, PPC_SETTINGS_Paramonov_L_Min_Matrix_Cols_Elm));
+const auto kTaskMatrix = std::tuple_cat(ppc::util::AddFuncTask<ParamonovLMinMatrixMPI, InType>(
+                                            kFunctionalParams, PPC_SETTINGS_paramonov_l_min_matrix_cols_elm),
+                                        ppc::util::AddFuncTask<ParamonovLMinMatrixSEQ, InType>(
+                                            kFunctionalParams, PPC_SETTINGS_paramonov_l_min_matrix_cols_elm));
 
-const auto kGtestValues = ppc::util::ExpandToValues(kTestTasksList);
+const auto kParameterizedValues = ppc::util::ExpandToValues(kTaskMatrix);
 
-const auto kFuncTestName = MinColumnRunFuncTestsProcesses::PrintFuncTestName<MinColumnRunFuncTestsProcesses>;
+const auto kFunctionalTestName = ParamonovLMinMatrixTestProcesses::PrintFuncTestName<ParamonovLMinMatrixTestProcesses>;
 
-INSTANTIATE_TEST_SUITE_P(ParamonovLMinColumnFuncTests, MinColumnRunFuncTestsProcesses, kGtestValues, kFuncTestName);
+INSTANTIATE_TEST_SUITE_P(MinimumColumnSearchSuite, ParamonovLMinMatrixTestProcesses, kParameterizedValues,
+                         kFunctionalTestName);
 
-TEST(ParamonovLMinMatrixColsElmSEQAdditional, AllEqualValuesMatrix) {
-  paramonov_l_min_matrix_cols_elm::InType matrix = {{5, 5, 5}, {5, 5, 5}, {5, 5, 5}};
-  paramonov_l_min_matrix_cols_elm::ParamonovLMinMatrixColsElmSEQ task(matrix);
-  EXPECT_TRUE(task.Validation());
-  EXPECT_TRUE(task.PreProcessing());
-  EXPECT_TRUE(task.Run());
-  EXPECT_TRUE(task.PostProcessing());
-  const auto output = task.GetOutput();
-  ASSERT_EQ(output.size(), 3U);
-  EXPECT_EQ(output[0], 5);
-  EXPECT_EQ(output[1], 5);
-  EXPECT_EQ(output[2], 5);
+template <typename TaskType>
+void ExpectFullPipelineSuccess(InType n) {
+  auto task = std::make_shared<TaskType>(n);
+
+  ASSERT_TRUE(task->Validation());
+  ASSERT_TRUE(task->PreProcessing());
+  ASSERT_TRUE(task->Run());
+  ASSERT_TRUE(task->PostProcessing());
+
+  std::vector<InType> expected_mins = CalculateExpectedColumnMins(n);
+  OutType output = task->GetOutput();
+
+  ASSERT_EQ(output.size(), static_cast<std::size_t>(n));
+
+  for (std::size_t j = 0; std::cmp_less(j, static_cast<std::size_t>(n)); j++) {
+    ASSERT_EQ(output[j], expected_mins[j]) << "Column " << j << ": mismatch";
+  }
 }
 
-TEST(ParamonovLMinMatrixColsElmSEQAdditional, SingleColumnMultiRow) {
-  paramonov_l_min_matrix_cols_elm::InType matrix = {{3}, {1}, {2}, {5}, {0}};
-  paramonov_l_min_matrix_cols_elm::ParamonovLMinMatrixColsElmSEQ task(matrix);
-  EXPECT_TRUE(task.Validation());
-  EXPECT_TRUE(task.PreProcessing());
-  EXPECT_TRUE(task.Run());
-  EXPECT_TRUE(task.PostProcessing());
-  const auto output = task.GetOutput();
-  ASSERT_EQ(output.size(), 1U);
-  EXPECT_EQ(output[0], 0);
+TEST(ParamonovLMinMatrixStandalone, SeqPipelineHandlesEdgeSizes) {
+  const std::array<InType, 6> k_sizes = {1, 4, 15, 33, 127, 255};
+  for (InType size : k_sizes) {
+    ExpectFullPipelineSuccess<ParamonovLMinMatrixSEQ>(size);
+  }
 }
 
-TEST(ParamonovLMinMatrixColsElmSEQAdditional, MatrixWithMaxIntValues) {
-  paramonov_l_min_matrix_cols_elm::InType matrix = {{std::numeric_limits<int>::max(), 100},
-                                                    {200, std::numeric_limits<int>::max()}};
-  paramonov_l_min_matrix_cols_elm::ParamonovLMinMatrixColsElmSEQ task(matrix);
+TEST(ParamonovLMinMatrixStandalone, MpiPipelineHandlesEdgeSizes) {
+  if (!ppc::util::IsUnderMpirun()) {
+    GTEST_SKIP();
+  }
+  const std::array<InType, 6> k_sizes = {1, 5, 18, 37, 130, 257};
+  for (InType size : k_sizes) {
+    ExpectFullPipelineSuccess<ParamonovLMinMatrixMPI>(size);
+  }
+}
+
+TEST(ParamonovLMinMatrixValidation, RejectsZeroInputSeq) {
+  ParamonovLMinMatrixSEQ task(0);
+  EXPECT_FALSE(task.Validation());
+  task.PreProcessing();
+  task.Run();
+  task.PostProcessing();
+}
+
+TEST(ParamonovLMinMatrixValidation, RejectsZeroInputMpi) {
+  if (!ppc::util::IsUnderMpirun()) {
+    GTEST_SKIP();
+  }
+  ParamonovLMinMatrixMPI task(0);
+  EXPECT_FALSE(task.Validation());
+  task.PreProcessing();
+  task.Run();
+  task.PostProcessing();
+}
+
+TEST(ParamonovLMinMatrixValidation, AcceptsPositiveInputSeq) {
+  ParamonovLMinMatrixSEQ task(10);
+
   EXPECT_TRUE(task.Validation());
   EXPECT_TRUE(task.PreProcessing());
   EXPECT_TRUE(task.Run());
   EXPECT_TRUE(task.PostProcessing());
-  const auto output = task.GetOutput();
-  ASSERT_EQ(output.size(), 2U);
-  EXPECT_EQ(output[0], 200);
-  EXPECT_EQ(output[1], 100);
+}
+
+TEST(ParamonovLMinMatrixValidation, AcceptsPositiveInputMpi) {
+  if (!ppc::util::IsUnderMpirun()) {
+    GTEST_SKIP();
+  }
+  ParamonovLMinMatrixMPI task(10);
+
+  EXPECT_TRUE(task.Validation());
+  EXPECT_TRUE(task.PreProcessing());
+  EXPECT_TRUE(task.Run());
+  EXPECT_TRUE(task.PostProcessing());
+}
+
+template <typename TaskType>
+void RunTaskTwice(TaskType &task, InType n) {
+  task.GetInput() = n;
+  task.GetOutput().clear();
+  ASSERT_TRUE(task.Validation());
+  ASSERT_TRUE(task.PreProcessing());
+  ASSERT_TRUE(task.Run());
+  ASSERT_TRUE(task.PostProcessing());
+
+  std::vector<InType> expected_mins = CalculateExpectedColumnMins(n);
+  OutType output = task.GetOutput();
+
+  ASSERT_EQ(output.size(), static_cast<std::size_t>(n));
+
+  for (std::size_t j = 0; std::cmp_less(j, static_cast<std::size_t>(n)); j++) {
+    ASSERT_EQ(output[j], expected_mins[j]) << "Column " << j << " minimum mismatch in reuse test";
+  }
+}
+
+TEST(ParamonovLMinMatrixPipeline, SeqTaskCanBeReusedAcrossRuns) {
+  ParamonovLMinMatrixSEQ task(4);
+  RunTaskTwice(task, 4);
+  RunTaskTwice(task, 9);
+}
+
+TEST(ParamonovLMinMatrixPipeline, MpiTaskCanBeReusedAcrossRuns) {
+  if (!ppc::util::IsUnderMpirun()) {
+    GTEST_SKIP();
+  }
+  ParamonovLMinMatrixMPI task(6);
+  RunTaskTwice(task, 6);
+  RunTaskTwice(task, 14);
 }
 
 }  // namespace

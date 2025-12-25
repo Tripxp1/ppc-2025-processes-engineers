@@ -1,73 +1,65 @@
-#include "Paramonov_L_Min_Matrix_Cols_Elm/seq/include/ops_seq.hpp"
+#include "paramonov_l_min_matrix_cols_elm/seq/include/ops_seq.hpp"
 
 #include <algorithm>
-#include <climits>
 #include <cstddef>
-#include <ranges>  // IWYU pragma: keep
+#include <cstdint>
 #include <vector>
 
-#include "Paramonov_L_Min_Matrix_Cols_Elm/common/include/common.hpp"
+#include "paramonov_l_min_matrix_cols_elm/common/include/common.hpp"
 
 namespace paramonov_l_min_matrix_cols_elm {
 
-ParamonovLMinMatrixColsElmSEQ::ParamonovLMinMatrixColsElmSEQ(const InType &in) {
+ParamonovLMinMatrixSEQ::ParamonovLMinMatrixSEQ(const InType &in) {
   SetTypeOfTask(GetStaticTypeOfTask());
-
-  if (!in.empty()) {
-    GetInput() = in;
-  } else {
-    GetInput() = InType{};
-  }
-
-  GetOutput() = OutType{};
-}
-
-bool ParamonovLMinMatrixColsElmSEQ::ValidationImpl() {
-  const auto &input = GetInput();
-  if (input.empty()) {
-    return false;
-  }
-
-  const std::size_t cols = input[0].size();
-  if (cols == 0) {
-    return false;
-  }
-
-  return std::ranges::all_of(input, [cols](const auto &row) { return row.size() == cols; });
-}
-
-bool ParamonovLMinMatrixColsElmSEQ::PreProcessingImpl() {
+  GetInput() = in;
   GetOutput().clear();
+}
+
+bool ParamonovLMinMatrixSEQ::ValidationImpl() {
+  return (GetInput() > 0) && (GetOutput().empty());
+}
+
+bool ParamonovLMinMatrixSEQ::PreProcessingImpl() {
+  GetOutput().clear();
+  GetOutput().reserve(GetInput());
   return true;
 }
 
-bool ParamonovLMinMatrixColsElmSEQ::RunImpl() {
-  const auto &matrix = GetInput();
-  auto &result = GetOutput();
-
-  result.clear();
-
-  if (matrix.empty()) {
+bool ParamonovLMinMatrixSEQ::RunImpl() {
+  InType n = GetInput();
+  if (n == 0) {
     return false;
   }
 
-  const std::size_t rows = matrix.size();
-  const std::size_t cols = matrix[0].size();
+  GetOutput().clear();
+  GetOutput().reserve(n);
 
-  result.assign(cols, INT_MAX);
+  auto generate = [](int64_t i, int64_t j) -> InType {
+    uint64_t seed = (i * 100000007ULL + j * 1000000009ULL) ^ 42ULL;
 
-  for (std::size_t i = 0; i < rows; ++i) {
-    for (std::size_t j = 0; j < cols; ++j) {
-      const int val = matrix[i][j];
-      result[j] = std::min(val, result[j]);
+    seed ^= seed >> 12;
+    seed ^= seed << 25;
+    seed ^= seed >> 27;
+    uint64_t value = seed * 0x2545F4914F6CDD1DULL;
+
+    return static_cast<InType>((value % 2000001) - 1000000);
+  };
+
+  for (InType j = 0; j < n; j++) {
+    InType min_val = generate(static_cast<int64_t>(0), static_cast<int64_t>(j));
+    for (InType i = 1; i < n; i++) {
+      InType val = generate(static_cast<int64_t>(i), static_cast<int64_t>(j));
+      min_val = std::min(min_val, val);
     }
+
+    GetOutput().push_back(min_val);
   }
 
-  return true;
+  return !GetOutput().empty() && (GetOutput().size() == static_cast<size_t>(n));
 }
 
-bool ParamonovLMinMatrixColsElmSEQ::PostProcessingImpl() {
-  return true;
+bool ParamonovLMinMatrixSEQ::PostProcessingImpl() {
+  return !GetOutput().empty() && (GetOutput().size() == static_cast<size_t>(GetInput()));
 }
 
 }  // namespace paramonov_l_min_matrix_cols_elm
